@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Management MyRepublic</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f5f3ff; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+
+
+const STORAGE_KEY = "myrepublic-pelanggan";
+const HARI_TEMPO = 6;
+
+const PAKET_LIST = [
+  { nama: "JET",   harga: 218000, speed: null },
+  { nama: "NEO",   harga: 233100, speed: "200 Mbps" },
+  { nama: "VALUE", harga: 277500, speed: "300 Mbps" },
+  { nama: "NEXUS", harga: 333000, speed: "400 Mbps" },
+  { nama: "PRIME", harga: 555000, speed: "500 Mbps" },
+];
+
+const initialForm = { customerId: "", nama: "", noWa: "", paket: "", tagihan: "", tanggalTerbit: "", startCycle: "" };
+
+function getCurrentBillingCycle(tanggalTerbit) {
+  const today = new Date();
+  const tgl = Number(tanggalTerbit);
+  if (today.getDate() >= tgl) {
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  } else {
+    const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
+  }
+}
+
+function isLunas(p) {
+  return p.paidCycle === getCurrentBillingCycle(p.tanggalTerbit);
+}
+
+function getCycleNumber(p) {
+  if (!p.joinDate) return 1;
+  const join = new Date(p.joinDate);
+  const today = new Date();
+  const months = (today.getFullYear() - join.getFullYear()) * 12 + (today.getMonth() - join.getMonth());
+  return Math.max(1, months + 1);
+}
+
+function formatJatuhTempo(tanggalTerbit) {
+  const jt = Number(tanggalTerbit) + HARI_TEMPO;
+  return jt <= 31 ? `tgl ${jt}` : `tgl ${jt - 30} (bln berikutnya)`;
+}
+
+function getJatuhTempo(tanggalTerbit) {
+  return Number(tanggalTerbit) + HARI_TEMPO;
+}
+
+function getDaysUntilTerbit(tanggalTerbit) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(today.getFullYear(), today.getMonth(), Number(tanggalTerbit));
+  if (target < today) target.setMonth(target.getMonth() + 1);
+  return Math.ceil((target - today) / (1000*60*60*24));
+}
+
+function getBillingPhase(tanggalTerbit) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tgl = Number(tanggalTerbit);
+  const thisMonthTerbit = new Date(today.getFullYear(), today.getMonth(), tgl);
+  const thisMonthJT = new Date(today.getFullYear(), today.getMonth(), tgl + HARI_TEMPO);
+  const days = getDaysUntilTerbit(tanggalTerbit);
+  if (today.getTime() === thisMonthTerbit.getTime())
+    return { phase:"terbit_hari_ini", label:"🔔 Tagihan Terbit Hari Ini!", color:"#e53e3e", bg:"#fff0f0", urgent:true };
+  if (today > thisMonthTerbit && today < thisMonthJT) {
+    const sisa = Math.ceil((thisMonthJT - today) / (1000*60*60*24));
+    return { phase:"sudah_terbit", label:`Sudah terbit • JT dalam ${sisa} hari`, color:"#ff8800", bg:"#fff8f0", urgent:false };
+  }
+  if (today >= thisMonthJT)
+    return { phase:"jatuh_tempo", label:"⚠️ Jatuh Tempo Terlewat!", color:"#cc0000", bg:"#ffe8e8", urgent:true };
+  if (days <= 1)
+    return { phase:"besok", label:"Terbit besok", color:"#d4a000", bg:"#fffdf0", urgent:false };
+  return { phase:"normal", label:`Terbit ${days} hari lagi`, color:"#2ecc71", bg:"#f0fff4", urgent:false };
+}
+
+function buildWALink(noWa, nama, tanggalTerbit, paket, tagihan) {
+  const clean = noWa.replace(/\D/g,"").replace(/^0/,"62");
+  const msg = encodeURIComponent(
+    `Halo Kak ${nama} 👋\n\nTagihan internet Kakak untuk paket *${paket}* sudah terbit.\n\n💰 Nominal: *Rp ${Number(tagihan).toLocaleString("id-ID")}*\n📅 Jatuh tempo: *${formatJatuhTempo(tanggalTerbit)} bulan ini*\n\nMohon segera lakukan pembayaran sebelum jatuh tempo agar layanan tidak terputus. 🙏\n\nTerima kasih, Kak! 😊`
+  );
+  return `https://wa.me/${clean}?text=${msg}`;
+}
+
+function getCycleBadgeStyle(cycle) {
+  if (cycle >= 13) return { bg:"#fff3e0", color:"#e65100", label:"🏆 " + cycle + " bln" };
+  if (cycle >= 7)  return { bg:"#f3e5f5", color:"#6a1b9a", label:"🟣 " + cycle + " bln" };
+  if (cycle >= 4)  return { bg:"#e8f5e9", color:"#2e7d32", label:"⭐ " + cycle + " bln" };
+  return { bg:"#e3f2fd", color:"#1565c0", label:"📅 " + cycle + " bln" };
+}
+
+const MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+function getMonthOptions() {
+  const today = new Date();
+  const opts = [];
+  for (let i = 24; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    opts.push({ value: d.toISOString().slice(0,7), label: `${MONTHS[d.getMonth()]} ${d.getFullYear()}` });
+  }
+  return opts.reverse();
+}
+
+function App() {
+  const [pelanggan, setPelanggan] = useState([]);
+  const [form, setForm] = useState(initialForm);
+  const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("semua");
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) setPelanggan(JSON.parse(data));
+    } catch {}
+  }, []);
+
+  function saveData(data) {
+    setPelanggan(data);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  }
+
+  function handlePaketChange(namaPaket) {
+    const found = PAKET_LIST.find(p => p.nama === namaPaket);
+    setForm(f => ({ ...f, paket: namaPaket, tagihan: found ? String(found.harga) : "" }));
+  }
+
+  function handleAdd() {
+    setError("");
+    if (!form.customerId.trim()) return setError("ID Pelanggan wajib diisi.");
+    if (!form.nama.trim()) return setError("Nama wajib diisi.");
+    if (!form.noWa.trim()) return setError("No. WhatsApp wajib diisi.");
+    if (!form.paket) return setError("Paket wajib dipilih.");
+    if (!form.tanggalTerbit) return setError("Tanggal terbit wajib dipilih.");
+    if (!form.startCycle) return setError("Bulan mulai berlangganan wajib dipilih.");
+    if (pelanggan.some(p => p.customerId.toLowerCase() === form.customerId.trim().toLowerCase()))
+      return setError(`ID "${form.customerId}" sudah digunakan.`);
+    saveData([...pelanggan, {
+      ...form,
+      customerId: form.customerId.trim().toUpperCase(),
+      id: Date.now(),
+      paidCycle: null,
+      joinDate: form.startCycle + "-01",
+    }]);
+    setForm(initialForm); setShowForm(false); setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  function toggleLunas(p) {
+    const cycle = getCurrentBillingCycle(p.tanggalTerbit);
+    const alreadyPaid = p.paidCycle === cycle;
+    saveData(pelanggan.map(x => x.id === p.id ? { ...x, paidCycle: alreadyPaid ? null : cycle } : x));
+  }
+
+  const totalLunas = pelanggan.filter(isLunas).length;
+  const totalBelum = pelanggan.length - totalLunas;
+  const perluKirim = pelanggan.filter(p => {
+    const ph = getBillingPhase(p.tanggalTerbit).phase;
+    return ["terbit_hari_ini","sudah_terbit","jatuh_tempo"].includes(ph) && !isLunas(p);
+  }).length;
+
+  const filtered = pelanggan
+    .filter(p => {
+      const matchSearch = p.nama.toLowerCase().includes(search.toLowerCase()) || p.customerId.toLowerCase().includes(search.toLowerCase());
+      const matchFilter = filter === "semua" || (filter === "lunas" ? isLunas(p) : !isLunas(p));
+      return matchSearch && matchFilter;
+    })
+    .sort((a, b) => {
+      const aU = !isLunas(a) && ["terbit_hari_ini","sudah_terbit","jatuh_tempo"].includes(getBillingPhase(a.tanggalTerbit).phase);
+      const bU = !isLunas(b) && ["terbit_hari_ini","sudah_terbit","jatuh_tempo"].includes(getBillingPhase(b.tanggalTerbit).phase);
+      if (aU !== bU) return aU ? -1 : 1;
+      return getDaysUntilTerbit(a.tanggalTerbit) - getDaysUntilTerbit(b.tanggalTerbit);
+    });
+
+  const selectedPaketInfo = PAKET_LIST.find(p => p.nama === form.paket);
+  const monthOptions = getMonthOptions();
+
+  return (
+    <div style={{ fontFamily:"'Segoe UI',sans-serif", maxWidth:680, margin:"0 auto", padding:"20px 16px", background:"#f5f3ff", minHeight:"100vh" }}>
+
+      {/* Header */}
+      <div style={{ background:"linear-gradient(135deg, #7C3AED, #4C1D95)", color:"white", borderRadius:16, padding:"20px 24px", marginBottom:12 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:12, marginBottom:14 }}>
+          <div>
+            <div style={{ fontSize:11, fontWeight:600, letterSpacing:2, opacity:0.75, textTransform:"uppercase", marginBottom:2 }}>MyRepublic</div>
+            <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.5 }}>Customer Management</div>
+            <div style={{ fontSize:12, opacity:0.8, marginTop:3 }}>Reminder & Monitoring Pembayaran</div>
+          </div>
+          {perluKirim > 0 && (
+            <span style={{ background:"#ff4444", color:"white", borderRadius:20, padding:"4px 12px", fontSize:12, fontWeight:700 }}>
+              🔔 {perluKirim} belum bayar & sudah terbit
+            </span>
+          )}
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+          {[["Total",pelanggan.length,"rgba(255,255,255,0.15)","white"],["✅ Lunas",totalLunas,"#e6f9ee","#2e7d32"],["❌ Belum",totalBelum,"#fff0f0","#c62828"]].map(([l,v,bg,c]) => (
+            <div key={l} style={{ background:bg, borderRadius:10, padding:"10px 12px", textAlign:"center" }}>
+              <div style={{ fontSize:20, fontWeight:800, color:c }}>{v}</div>
+              <div style={{ fontSize:11, color:c, opacity:0.85 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {saved && <div style={{ background:"#e6f9ee", border:"1px solid #b2dfdb", borderRadius:10, padding:"10px 16px", marginBottom:10, fontSize:13, color:"#2e7d32", fontWeight:600 }}>✅ Pelanggan berhasil disimpan!</div>}
+
+      {/* Toolbar */}
+      <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+        <input style={{ flex:1, border:"1.5px solid #ddd", borderRadius:10, padding:"9px 14px", fontSize:14, outline:"none", background:"white" }}
+          placeholder="🔍 Cari nama atau ID..." value={search} onChange={e => setSearch(e.target.value)} />
+        <button style={{ background:"#7C3AED", color:"white", border:"none", borderRadius:10, padding:"9px 16px", fontSize:14, fontWeight:600, cursor:"pointer" }}
+          onClick={() => { setShowForm(!showForm); setError(""); }}>
+          {showForm ? "✕" : "+ Tambah"}
+        </button>
+      </div>
+
+      {/* Filter */}
+      <div style={{ display:"flex", gap:6, marginBottom:12 }}>
+        {[["semua","Semua"],["belum","❌ Belum Bayar"],["lunas","✅ Lunas"]].map(([val,label]) => (
+          <button key={val} onClick={() => setFilter(val)}
+            style={{ border:"none", borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer",
+              background:filter===val?"#7C3AED":"white", color:filter===val?"white":"#555",
+              boxShadow:filter===val?"none":"0 1px 4px rgba(0,0,0,0.08)" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Form */}
+      {showForm && (
+        <div style={{ background:"white", borderRadius:14, padding:"20px 22px", marginBottom:14, boxShadow:"0 2px 12px rgba(0,0,0,0.08)" }}>
+          <div style={{ fontSize:15, fontWeight:700, color:"#1a1a2e", marginBottom:14 }}>Data Pelanggan Baru</div>
+          <div style={{ marginBottom:12 }}>
+            <label style={{ fontSize:12, fontWeight:700, color:"#7C3AED", display:"block", marginBottom:5 }}>🆔 ID Pelanggan *</label>
+            <input style={{ width:"100%", border:"2px solid #7C3AED", borderRadius:8, padding:"10px 14px", fontSize:15, fontWeight:700, outline:"none", background:"#f5f3ff", boxSizing:"border-box" }}
+              placeholder="Masukkan ID sesuai sistem Anda"
+              value={form.customerId} onChange={e => { setForm({...form, customerId:e.target.value}); setError(""); }} />
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              <label style={{ fontSize:12, fontWeight:600, color:"#555" }}>Nama Pelanggan *</label>
+              <input style={{ border:"1.5px solid #e0e0e0", borderRadius:8, padding:"8px 12px", fontSize:14, outline:"none", background:"#fafafa" }}
+                placeholder="Budi Santoso" value={form.nama} onChange={e => setForm({...form, nama:e.target.value})} />
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              <label style={{ fontSize:12, fontWeight:600, color:"#555" }}>No. WhatsApp *</label>
+              <input style={{ border:"1.5px solid #e0e0e0", borderRadius:8, padding:"8px 12px", fontSize:14, outline:"none", background:"#fafafa" }}
+                placeholder="08123456789" value={form.noWa} onChange={e => setForm({...form, noWa:e.target.value})} />
+            </div>
+          </div>
+          <div style={{ marginBottom:12 }}>
+            <label style={{ fontSize:12, fontWeight:700, color:"#555", display:"block", marginBottom:8 }}>📦 Pilih Paket *</label>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6 }}>
+              {PAKET_LIST.map(p => {
+                const selected = form.paket === p.nama;
+                return (
+                  <button key={p.nama} onClick={() => handlePaketChange(p.nama)}
+                    style={{ border:selected?"2px solid #7C3AED":"1.5px solid #e0e0e0", borderRadius:10, padding:"10px 6px", cursor:"pointer", textAlign:"center", background:selected?"#f5f3ff":"white" }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:selected?"#7C3AED":"#1a1a2e" }}>{p.nama}</div>
+                    {p.speed && <div style={{ fontSize:9, color:"#888", marginTop:2 }}>{p.speed}</div>}
+                    <div style={{ fontSize:11, fontWeight:700, color:selected?"#7C3AED":"#555", marginTop:4 }}>{p.harga.toLocaleString("id-ID")}</div>
+                  </button>
+                );
+              })}
+            </div>
+            {selectedPaketInfo && (
+              <div style={{ marginTop:10, background:"#f5f3ff", border:"1.5px solid #7C3AED", borderRadius:10, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div>
+                  <div style={{ fontSize:11, color:"#888" }}>Tagihan otomatis terisi</div>
+                  <div style={{ fontSize:16, fontWeight:800, color:"#7C3AED" }}>Rp {Number(form.tagihan).toLocaleString("id-ID")}</div>
+                </div>
+                <div style={{ background:"#7C3AED", color:"white", borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:700 }}>
+                  {selectedPaketInfo.nama}{selectedPaketInfo.speed ? ` • ${selectedPaketInfo.speed}` : ""}
+                </div>
+              </div>
+            )}
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              <label style={{ fontSize:12, fontWeight:600, color:"#555" }}>📅 Tanggal Terbit Tagihan *</label>
+              <select style={{ border:"1.5px solid #e0e0e0", borderRadius:8, padding:"8px 12px", fontSize:14, outline:"none", background:"#fafafa" }}
+                value={form.tanggalTerbit} onChange={e => setForm({...form, tanggalTerbit:e.target.value})}>
+                <option value="">Pilih tanggal...</option>
+                {Array.from({length:31},(_,i)=>i+1).map(d=><option key={d} value={d}>Tanggal {d}</option>)}
+              </select>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              <label style={{ fontSize:12, fontWeight:600, color:"#aaa" }}>⏰ Jatuh Tempo (otomatis)</label>
+              <div style={{ border:"1.5px solid #f0f0f0", borderRadius:8, padding:"9px 12px", fontSize:14, background:"#f8f8f8", color:form.tanggalTerbit?"#e53e3e":"#ccc", fontWeight:700 }}>
+                {form.tanggalTerbit ? `Tanggal ${getJatuhTempo(form.tanggalTerbit)}` : "—"}
+              </div>
+            </div>
+          </div>
+          <div style={{ marginBottom:14 }}>
+            <label style={{ fontSize:12, fontWeight:700, color:"#555", display:"block", marginBottom:5 }}>
+              🗓 Mulai Berlangganan Sejak *
+            </label>
+            <select style={{ width:"100%", border:"1.5px solid #e0e0e0", borderRadius:8, padding:"9px 12px", fontSize:14, outline:"none", background:"#fafafa", boxSizing:"border-box" }}
+              value={form.startCycle} onChange={e => setForm({...form, startCycle:e.target.value})}>
+              <option value="">Pilih bulan mulai...</option>
+              {monthOptions.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+            {form.startCycle && (() => {
+              const join = new Date(form.startCycle + "-01");
+              const today = new Date();
+              const months = (today.getFullYear() - join.getFullYear()) * 12 + (today.getMonth() - join.getMonth()) + 1;
+              const cs = getCycleBadgeStyle(months);
+              return (
+                <div style={{ marginTop:8, background:cs.bg, borderRadius:8, padding:"7px 12px", fontSize:13, color:cs.color, fontWeight:700, display:"inline-block" }}>
+                  {cs.label} berlangganan → Billing Cycle ke-{months}
+                </div>
+              );
+            })()}
+          </div>
+          {error && <div style={{ background:"#fff0f0", color:"#e53e3e", borderRadius:8, padding:"8px 14px", fontSize:13, marginBottom:12, fontWeight:600 }}>⚠️ {error}</div>}
+          <button style={{ background:"#7C3AED", color:"white", border:"none", borderRadius:10, padding:"10px 22px", fontSize:14, fontWeight:600, cursor:"pointer" }} onClick={handleAdd}>
+            💾 Simpan Pelanggan
+          </button>
+        </div>
+      )}
+
+      {/* List */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign:"center", color:"#999", padding:"48px 20px", background:"white", borderRadius:14, fontSize:14 }}>
+          {pelanggan.length === 0 ? "Belum ada pelanggan. Klik + Tambah untuk mulai." : "Tidak ada pelanggan di kategori ini."}
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {filtered.map(p => {
+            const status = getBillingPhase(p.tanggalTerbit);
+            const lunas = isLunas(p);
+            const waLink = buildWALink(p.noWa, p.nama, p.tanggalTerbit, p.paket || "internet", p.tagihan);
+            const paketInfo = PAKET_LIST.find(x => x.nama === p.paket);
+            const cycleNum = getCycleNumber(p);
+            const cs = getCycleBadgeStyle(cycleNum);
+            return (
+              <div key={p.id} style={{ background:"white", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 8px rgba(0,0,0,0.07)", borderLeft:`4px solid ${lunas?"#2ecc71":status.color}`, opacity:lunas?0.85:1 }}>
+                {status.urgent && !lunas && (
+                  <div style={{ background:status.bg, color:status.color, borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:700, marginBottom:10, textAlign:"center" }}>
+                    {status.label}
+                  </div>
+                )}
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", gap:5, flexWrap:"wrap", alignItems:"center", marginBottom:5 }}>
+                      <span style={{ background:"#ede9fe", color:"#7C3AED", borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{p.customerId}</span>
+                      {lunas
+                        ? <span style={{ background:"#e6f9ee", color:"#2e7d32", borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>✅ LUNAS</span>
+                        : <span style={{ background:"#fff0f0", color:"#e53e3e", borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>❌ BELUM BAYAR</span>
+                      }
+                      <span style={{ background:cs.bg, color:cs.color, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
+                        Cycle ke-{cycleNum}
+                      </span>
+                    </div>
+                    <div style={{ fontSize:15, fontWeight:700, color:"#1a1a2e" }}>{p.nama}</div>
+                    <div style={{ fontSize:12, color:"#888", marginTop:2 }}>📱 {p.noWa}</div>
+                  </div>
+                  <div style={{ textAlign:"right", marginLeft:10, flexShrink:0 }}>
+                    {!status.urgent && !lunas && (
+                      <div style={{ display:"inline-block", borderRadius:20, padding:"3px 10px", fontSize:11, fontWeight:700, background:status.bg, color:status.color, marginBottom:4 }}>
+                        {status.label}
+                      </div>
+                    )}
+                    <div style={{ marginBottom:4 }}>
+                      <span style={{ background:"#7C3AED", color:"white", borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
+                        {p.paket}{paketInfo?.speed ? ` • ${paketInfo.speed}` : ""}
+                      </span>
+                    </div>
+                    <div style={{ fontSize:15, fontWeight:800, color:"#1a1a2e" }}>
+                      Rp {Number(p.tagihan).toLocaleString("id-ID")}
+                    </div>
+                    <div style={{ fontSize:11, color:"#aaa", marginTop:2 }}>
+                      Terbit tgl {p.tanggalTerbit} → JT {formatJatuhTempo(p.tanggalTerbit)}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  {!lunas && (
+                    <a href={waLink} target="_blank" rel="noreferrer"
+                      style={{ flex:1, background:status.urgent?"#e53e3e":"#25d366", color:"white", borderRadius:8, padding:"9px 10px", fontSize:12, fontWeight:600, textDecoration:"none", textAlign:"center" }}>
+                      {status.urgent ? "🔔 Kirim Reminder!" : "💬 Kirim WA Reminder"}
+                    </a>
+                  )}
+                  <button onClick={() => toggleLunas(p)}
+                    style={{ flex:lunas?1:0, background:lunas?"#fff8e1":"#e6f9ee", color:lunas?"#f57f17":"#2e7d32", border:"none", borderRadius:8, padding:"9px 12px", fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>
+                    {lunas ? "↩️ Batalkan Lunas" : "✅ Tandai Lunas"}
+                  </button>
+                  <button onClick={() => saveData(pelanggan.filter(x=>x.id!==p.id))}
+                    style={{ background:"#fff0f0", color:"#e53e3e", border:"none", borderRadius:8, padding:"9px 10px", fontSize:14, cursor:"pointer" }}>
+                    🗑
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div style={{ textAlign:"center", color:"#bbb", fontSize:11, marginTop:20 }}>
+        MyRepublic Customer Management • Status Lunas reset otomatis tiap siklus
+      </div>
+    </div>
+  );
+}
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
