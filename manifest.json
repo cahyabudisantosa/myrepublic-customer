@@ -1,0 +1,20 @@
+{
+  "name": "MoraRepublic CMS",
+  "short_name": "Mora CMS",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#4C1D95",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192/4C1D95/FFFFFF?text=MR",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512/4C1D95/FFFFFF?text=MR",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
