@@ -3,66 +3,70 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MoraRepublic CMS Pro</title>
+  <title>MoraRepublic CMS</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    body { font-family: sans-serif; background: #F3F4F6; margin: 0; padding: 0; }
-    #root { max-width: 480px; margin: 0 auto; }
-    .login-box { text-align: center; margin-top: 100px; padding: 20px; }
-    .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    body { font-family: sans-serif; background: #f3f4f6; margin: 0; padding: 20px; }
+    .container { max-width: 480px; margin: 0 auto; }
+    .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 10px; }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect } = React;
-    // --- GANTI DENGAN URL DEPLOYMENT GOOGLE SCRIPT ANDA ---
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwxZHqpohHYjFpj3mpDvgTF-55hJLoTeaKVLnq7DXS8Lu0RibQcO3_PrbbLISyGTNcvBw/exec";
     const PIN_RAHASIA = "2604";
 
     function App() {
-      const [isLoggedIn, setIsLoggedIn] = useState(false);
-      const [pin, setPin] = useState("");
-      const [data, setData] = useState([]);
-      const [loading, setLoading] = useState(false);
+      const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+      const [pin, setPin] = React.useState("");
+      const [data, setData] = React.useState([]);
+      const [loading, setLoading] = React.useState(false);
 
-      useEffect(() => {
-        if(isLoggedIn) {
-          setLoading(true);
-          fetch(SCRIPT_URL + "?action=getAll")
-            .then(res => res.json())
-            .then(json => {
-              if(json.success) setData(json.data);
-              setLoading(false);
-            })
-            .catch(() => setLoading(false));
+      const handleLogin = () => {
+        if (pin === PIN_RAHASIA) {
+          setIsLoggedIn(true);
+          fetchData();
+        } else {
+          alert("PIN Salah");
         }
-      }, [isLoggedIn]);
+      };
+
+      const fetchData = () => {
+        setLoading(true);
+        fetch(SCRIPT_URL + "?action=getAll")
+          .then(res => res.json())
+          .then(json => {
+            if (json.success) setData(json.data);
+            setLoading(false);
+          })
+          .catch(err => {
+            alert("Gagal memuat data: " + err);
+            setLoading(false);
+          });
+      };
 
       if (!isLoggedIn) {
         return (
-          <div className="login-box">
-            <h2>Masukkan PIN</h2>
-            <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} style={{padding: "10px", fontSize: "16px"}} />
-            <button onClick={() => { if(pin === PIN_RAHASIA) setIsLoggedIn(true); else alert("PIN Salah!"); }} style={{padding: "10px 20px", marginLeft: "5px"}}>Masuk</button>
+          <div className="container" style={{textAlign: "center"}}>
+            <h2>Login</h2>
+            <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} />
+            <button onClick={handleLogin}>Masuk</button>
           </div>
         );
       }
 
       return (
-        <div style={{padding: "20px"}}>
-          <h2>Dashboard Pro</h2>
-          {loading ? <p>Memuat data...</p> : (
-            data.map(p => (
-              <div key={p.id} className="card">
-                <strong>{p.nama}</strong><br/>
-                ID: {p.customerId} | Tagihan: {p.tagihan}
-              </div>
-            ))
+        <div className="container">
+          <h2>Dashboard</h2>
+          <button onClick={fetchData}>Refresh Data</button>
+          {loading ? <p>Memuat...</p> : (
+            data.length > 0 ? 
+            data.map(p => <div key={p.id} className="card">{p.nama} - {p.tagihan}</div>) : 
+            <p>Data kosong atau gagal dimuat.</p>
           )}
-          <button onClick={() => window.location.reload()} style={{marginTop: "20px"}}>Refresh Data</button>
         </div>
       );
     }
