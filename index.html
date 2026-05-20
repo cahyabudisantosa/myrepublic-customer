@@ -7,72 +7,52 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #f3f4f6; margin: 0; padding: 10px; }
+    .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; background: #6D28D9; color: white; margin: 5px; }
+  </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwxZHqpohHYjFpj3mpDvgTF-55hJLoTeaKVLnq7DXS8Lu0RibQcO3_PrbbLISyGTNcvBw/exec";
-    const PIN_RAHASIA = "2604";
+    const PIN = "2604";
 
     function App() {
       const [isLoggedIn, setIsLoggedIn] = React.useState(false);
       const [pin, setPin] = React.useState("");
       const [data, setData] = React.useState([]);
-      const [loading, setLoading] = React.useState(false);
-
-      const handleLogin = () => {
-        if (pin === PIN_RAHASIA) {
-          setIsLoggedIn(true);
-          fetchData();
-        } else {
-          alert("PIN Salah");
-        }
-      };
-
-      const fetchData = () => {
-        setLoading(true);
-        fetch(SCRIPT_URL + "?action=getAll")
-          .then(res => res.json())
-          .then(json => {
-            if (json.success) setData(json.data);
-            else alert("Error: " + json.error);
-            setLoading(false);
-          })
-          .catch(err => {
-            alert("Koneksi gagal: " + err);
-            setLoading(false);
-          });
-      };
 
       if (!isLoggedIn) {
         return (
-          <div style={{textAlign: "center", marginTop: "50px", fontFamily: "sans-serif"}}>
+          <div style={{textAlign: "center", marginTop: "50px"}}>
             <h2>Login</h2>
-            <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} style={{padding: "10px"}} />
-            <button onClick={handleLogin} style={{padding: "10px 20px", marginLeft: "10px"}}>Masuk</button>
+            <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} />
+            <button onClick={() => { if(pin === PIN) setIsLoggedIn(true); else alert("Salah PIN"); }}>Masuk</button>
           </div>
         );
       }
 
       return (
-        <div style={{fontFamily: "sans-serif", padding: "20px"}}>
+        <div>
           <h2>Dashboard</h2>
-          <button onClick={fetchData}>Refresh Data</button>
-          {loading ? <p>Memuat...</p> : (
-            data.map(p => (
-              <div key={p.id} style={{border: "1px solid #ccc", padding: "10px", margin: "10px 0", borderRadius: "8px"}}>
-                <strong>{p.nama}</strong><br/>
-                ID: {p.customerId} | Tagihan: {p.tagihan}
-              </div>
-            ))
-          )}
+          <button onClick={() => {
+            fetch(SCRIPT_URL + "?action=getAll")
+              .then(res => res.json())
+              .then(json => setData(json.data));
+          }}>Load Data</button>
+          {data.map(p => (
+            <div key={p.id} className="card">
+              <strong>{p.nama}</strong><br/>
+              ID: {p.customerId} - Tagihan: {p.tagihan}
+            </div>
+          ))}
         </div>
       );
     }
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
 </html>
