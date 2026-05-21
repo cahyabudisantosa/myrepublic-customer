@@ -92,7 +92,16 @@
 
   const isLunas = (p) => p.paidCycle === getCurrentBillingCycle(p.tanggalTerbit);
   
-  const getBillingPhase = (t) => {
+  const getDaysUntilTerbit = (tanggalTerbit) => {
+  const today = getNow();
+  today.setHours(0, 0, 0, 0);
+  const tgl = Number(tanggalTerbit);
+  const target = new Date(today.getFullYear(), today.getMonth(), tgl);
+  if (target < today) target.setMonth(target.getMonth() + 1);
+  return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+};
+
+const getBillingPhase = (t) => {
     const today = getNow();
     today.setHours(0,0,0,0);
     const terbit = new Date(today.getFullYear(), today.getMonth(), Number(t || 1));
