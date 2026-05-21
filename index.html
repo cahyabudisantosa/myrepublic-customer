@@ -11,7 +11,7 @@
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
   
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,1059 +59,366 @@
 <body>
 <div id="root"></div>
 
-<script>
-function initApp() {
-  var React = window.React;
-  var ReactDOM = window.ReactDOM;
-  if (!React || !ReactDOM) { setTimeout(initApp, 50); return; }
-  var useState = React.useState;
-  var useEffect = React.useEffect;
-  var useRef = React.useRef;
-  var useCallback = React.useCallback;
-  var useMemo = React.useMemo;
-function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
-function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
-function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
-function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
-function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
-function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
-function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
-function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
-function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
-function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
-var _React = React,
-  useState = _React.useState,
-  useEffect = _React.useEffect,
-  useMemo = _React.useMemo;
+<script type="text/babel">
+  const { useState, useEffect, useMemo } = React;
 
-// ===== KONFIGURASI =====
-var STORAGE_KEY = "myrepublic-pro-v2";
-var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxd00D85-G-QhnpUzyMBt7YO7ItnVNtzjIWb58j9fqtu3GBj2mHnZcmPRhP_BQI3ep1Yg/exec";
-var HARI_TEMPO = 6;
-var PIN_RAHASIA = "2604";
-var PAKET_LIST = [{
-  nama: "JET",
-  harga: 218000,
-  speed: null,
-  color: "#6D28D9"
-}, {
-  nama: "NEO",
-  harga: 233100,
-  speed: "200 Mbps",
-  color: "#2563EB"
-}, {
-  nama: "VALUE",
-  harga: 277500,
-  speed: "300 Mbps",
-  color: "#059669"
-}, {
-  nama: "NEXUS",
-  harga: 333000,
-  speed: "400 Mbps",
-  color: "#D97706"
-}, {
-  nama: "PRIME",
-  harga: 555000,
-  speed: "500 Mbps",
-  color: "#DC2626"
-}];
-var STATUS_KLIEN = ["Aktif", "Prospek", "Menunggak", "Isolasi", "Putus"];
+  // ===== KONFIGURASI =====
+  const STORAGE_KEY = "myrepublic-pro-v2";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxd00D85-G-QhnpUzyMBt7YO7ItnVNtzjIWb58j9fqtu3GBj2mHnZcmPRhP_BQI3ep1Yg/exec";
+  const HARI_TEMPO = 6;
+  const PIN_RAHASIA = "2604"; 
+  
+  const PAKET_LIST = [
+    { nama: "JET", harga: 218000, speed: null, color: "#6D28D9" },
+    { nama: "NEO", harga: 233100, speed: "200 Mbps", color: "#2563EB" },
+    { nama: "VALUE", harga: 277500, speed: "300 Mbps", color: "#059669" },
+    { nama: "NEXUS", harga: 333000, speed: "400 Mbps", color: "#D97706" },
+    { nama: "PRIME", harga: 555000, speed: "500 Mbps", color: "#DC2626" }
+  ];
 
-// ===== HELPER FUNCTIONS =====
-var getNow = function getNow() {
-  return new Date(new Date().toLocaleString("en-US", {
-    timeZone: "Asia/Jakarta"
-  }));
-};
-var formatRupiah = function formatRupiah(n) {
-  return "Rp " + Number(n || 0).toLocaleString("id-ID");
-};
-var cleanPhone = function cleanPhone(wa) {
-  return String(wa || "").replace(/\D/g, "").replace(/^0/, "62");
-};
-var getCurrentBillingCycle = function getCurrentBillingCycle(t) {
-  var today = getNow();
-  if (today.getDate() >= Number(t || 1)) return "".concat(today.getFullYear(), "-").concat(String(today.getMonth() + 1).padStart(2, "0"));
-  var prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  return "".concat(prev.getFullYear(), "-").concat(String(prev.getMonth() + 1).padStart(2, "0"));
-};
-var isLunas = function isLunas(p) {
-  return p.paidCycle === getCurrentBillingCycle(p.tanggalTerbit);
-};
-var getBillingPhase = function getBillingPhase(t) {
-  var today = getNow();
-  today.setHours(0, 0, 0, 0);
-  var terbit = new Date(today.getFullYear(), today.getMonth(), Number(t || 1));
-  var jatuhTempo = new Date(today.getFullYear(), today.getMonth(), Number(t || 1) + HARI_TEMPO);
-  if (today.getTime() === terbit.getTime()) return {
-    phase: "terbit",
-    label: "Terbit Hari Ini",
-    color: "#DC2626",
-    bg: "#FEF2F2",
-    urgent: true
-  };
-  if (today > terbit && today < jatuhTempo) return {
-    phase: "aktif",
-    label: "JT ".concat(Math.ceil((jatuhTempo - today) / 86400000), " hari lagi"),
-    color: "#D97706",
-    bg: "#FFFBEB",
-    urgent: false
-  };
-  if (today >= jatuhTempo) return {
-    phase: "lewat",
-    label: "Jatuh Tempo!",
-    color: "#DC2626",
-    bg: "#FEF2F2",
-    urgent: true
-  };
-  var targetTerbit = new Date(terbit);
-  if (targetTerbit < today) targetTerbit.setMonth(targetTerbit.getMonth() + 1);
-  return {
-    phase: "normal",
-    label: "".concat(Math.ceil((targetTerbit - today) / 86400000), " hari lagi"),
-    color: "#059669",
-    bg: "#ECFDF5",
-    urgent: false
-  };
-};
-var buildWALink = function buildWALink(noWa, nama, t, tagihan, customerId, mode) {
-  var phone = cleanPhone(noWa);
-  var bulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][getNow().getMonth()];
-  var jt = Number(t) + HARI_TEMPO;
-  jt = jt > 31 ? jt - 30 : jt;
-  var msg = mode === "promo" ? "Halo *Kak ".concat(nama, "* \uD83D\uDC4B\n\nAda info promo spesial bulan ").concat(bulan, " dari MoraRepublic nih buat Kakak! \uD83C\uDF89\nYuk upgrade layanan internetnya sekarang.\n\nBalas pesan ini untuk info lebih lanjut ya Kak! \uD83D\uDE0A") : "Halo *Kak ".concat(nama, "* \uD83D\uDC4B\nMau mengingatkan untuk tagihan WiFi MyRepublic bulan ").concat(bulan, " sudah terbit \uD83D\uDE4F\n\nNama : *").concat(nama, "*\nID : *").concat(customerId, "*\nTotal : *").concat(formatRupiah(tagihan), "*\nJatuh Tempo : *Tgl ").concat(jt, " ").concat(bulan, "*\n\nMohon segera melakukan pembayaran agar layanan tidak terputus ya Kak \uD83D\uDE0A\nTerima kasih! \uD83D\uDE4F");
-  return "https://wa.me/".concat(phone, "?text=").concat(encodeURIComponent(msg));
-};
-var exportToCSV = function exportToCSV(data) {
-  var headers = ["ID Pelanggan", "Nama", "No WA", "Paket", "Tagihan", "Tgl Terbit", "Status CRM", "Lunas Bulan Ini", "Catatan"];
-  var rows = data.map(function (p) {
-    return [p.customerId, p.nama, p.noWa, p.paket, p.tagihan, p.tanggalTerbit, p.statusKlien, isLunas(p) ? "Ya" : "Tidak", "\"".concat((p.catatan || "").replace(/"/g, '""'), "\"")];
-  });
-  var csvContent = "data:text/csv;charset=utf-8," + [headers.join(",")].concat(_toConsumableArray(rows.map(function (e) {
-    return e.join(",");
-  }))).join("\n");
-  var encodedUri = encodeURI(csvContent);
-  var link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "Data_Pelanggan_".concat(getNow().getTime(), ".csv"));
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
+  const STATUS_KLIEN = ["Aktif", "Prospek", "Menunggak", "Isolasi", "Putus"];
 
-// ===== COMPONENTS =====
-var LoginScreen = function LoginScreen(_ref) {
-  var onLogin = _ref.onLogin;
-  var _useState = useState(""),
-    _useState2 = _slicedToArray(_useState, 2),
-    pin = _useState2[0],
-    setPin = _useState2[1];
-  var _useState3 = useState(false),
-    _useState4 = _slicedToArray(_useState3, 2),
-    error = _useState4[0],
-    setError = _useState4[1];
-  var handleLogin = function handleLogin() {
-    if (pin === PIN_RAHASIA) onLogin();else {
-      setError(true);
-      setPin("");
-      setTimeout(function () {
-        return setError(false);
-      }, 500);
-    }
+  // ===== HELPER FUNCTIONS =====
+  const getNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+  const formatRupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");
+  const cleanPhone = (wa) => String(wa || "").replace(/\D/g, "").replace(/^0/, "62");
+  
+  const getCurrentBillingCycle = (t) => {
+    const today = getNow();
+    if (today.getDate() >= Number(t || 1)) return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
   };
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      height: "100vh",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "linear-gradient(160deg, #5B21B6, #3B0764)",
-      padding: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: error ? "shake" : "",
-    style: {
-      background: "white",
-      padding: 30,
-      borderRadius: 20,
-      width: "100%",
-      maxWidth: 360,
-      textAlign: "center"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 40,
-      marginBottom: 10
-    }
-  }, "\uD83D\uDD12"), /*#__PURE__*/React.createElement("h2", {
-    style: {
-      margin: "0 0 5px",
-      color: "#111827"
-    }
-  }, "Keamanan Sistem"), /*#__PURE__*/React.createElement("p", {
-    style: {
-      margin: "0 0 20px",
-      color: "#6B7280",
-      fontSize: 13
-    }
-  }, "Masukkan PIN untuk mengakses data."), /*#__PURE__*/React.createElement("input", {
-    type: "password",
-    value: pin,
-    onChange: function onChange(e) {
-      return setPin(e.target.value);
-    },
-    onKeyDown: function onKeyDown(e) {
-      return e.key === 'Enter' && handleLogin();
-    },
-    placeholder: "\u2022 \u2022 \u2022 \u2022",
-    style: {
-      width: "100%",
-      textAlign: "center",
-      fontSize: 24,
-      letterSpacing: 10,
-      padding: 15,
-      borderRadius: 12,
-      border: error ? "2px solid #DC2626" : "2px solid #E5E7EB",
-      marginBottom: 20
-    },
-    maxLength: 6
-  }), /*#__PURE__*/React.createElement("button", {
-    onClick: handleLogin,
-    style: {
-      width: "100%",
-      background: "#6D28D9",
-      color: "white",
-      padding: 15,
-      borderRadius: 12,
-      border: "none",
-      fontSize: 16,
-      fontWeight: 700
-    }
-  }, "Buka Sistem")));
-};
-var AddForm = function AddForm(_ref2) {
-  var initialData = _ref2.initialData,
-    onSave = _ref2.onSave,
-    onClose = _ref2.onClose;
-  var _useState5 = useState(initialData || {
-      customerId: "",
-      nama: "",
-      noWa: "",
-      paket: "",
-      tagihan: "",
-      tanggalTerbit: "",
-      startCycle: "",
-      statusKlien: "Aktif",
-      catatan: ""
-    }),
-    _useState6 = _slicedToArray(_useState5, 2),
-    form = _useState6[0],
-    setForm = _useState6[1];
-  var _useState7 = useState(""),
-    _useState8 = _slicedToArray(_useState7, 2),
-    error = _useState8[0],
-    setError = _useState8[1];
-  var handleSave = function handleSave() {
-    if (!form.customerId.trim()) return setError("ID Pelanggan wajib diisi");
-    if (!form.nama.trim()) return setError("Nama wajib diisi");
-    if (!form.noWa || form.noWa.length < 10) return setError("No. WhatsApp minimal 10 angka");
-    onSave(_objectSpread(_objectSpread(_objectSpread({}, initialData), form), {}, {
-      customerId: form.customerId.trim().toUpperCase(),
-      joinDate: form.startCycle ? form.startCycle + "-01" : ""
-    }));
+
+  const isLunas = (p) => p.paidCycle === getCurrentBillingCycle(p.tanggalTerbit);
+  
+  const getBillingPhase = (t) => {
+    const today = getNow();
+    today.setHours(0,0,0,0);
+    const terbit = new Date(today.getFullYear(), today.getMonth(), Number(t || 1));
+    const jatuhTempo = new Date(today.getFullYear(), today.getMonth(), Number(t || 1) + HARI_TEMPO);
+    
+    if (today.getTime() === terbit.getTime()) return { phase: "terbit", label: "Terbit Hari Ini", color: "#DC2626", bg: "#FEF2F2", urgent: true };
+    if (today > terbit && today < jatuhTempo) return { phase: "aktif", label: `JT ${Math.ceil((jatuhTempo - today) / 86400000)} hari lagi`, color: "#D97706", bg: "#FFFBEB", urgent: false };
+    if (today >= jatuhTempo) return { phase: "lewat", label: "Jatuh Tempo!", color: "#DC2626", bg: "#FEF2F2", urgent: true };
+    
+    let targetTerbit = new Date(terbit);
+    if(targetTerbit < today) targetTerbit.setMonth(targetTerbit.getMonth() + 1);
+    return { phase: "normal", label: `${Math.ceil((targetTerbit - today) / 86400000)} hari lagi`, color: "#059669", bg: "#ECFDF5", urgent: false };
   };
-  var inputStyle = {
-    width: "100%",
-    borderRadius: 10,
-    padding: "11px 14px",
-    fontSize: 14,
-    marginBottom: 15
+
+  const buildWALink = (noWa, nama, t, tagihan, customerId, mode) => {
+    const phone = cleanPhone(noWa);
+    const bulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][getNow().getMonth()];
+    let jt = Number(t) + HARI_TEMPO;
+    jt = jt > 31 ? jt - 30 : jt;
+    
+    const msg = mode === "promo" 
+      ? `Halo *Kak ${nama}* 👋\n\nAda info promo spesial bulan ${bulan} dari MoraRepublic nih buat Kakak! 🎉\nYuk upgrade layanan internetnya sekarang.\n\nBalas pesan ini untuk info lebih lanjut ya Kak! 😊`
+      : `Halo *Kak ${nama}* 👋\nMau mengingatkan untuk tagihan WiFi MyRepublic bulan ${bulan} sudah terbit 🙏\n\nNama : *${nama}*\nID : *${customerId}*\nTotal : *${formatRupiah(tagihan)}*\nJatuh Tempo : *Tgl ${jt} ${bulan}*\n\nMohon segera melakukan pembayaran agar layanan tidak terputus ya Kak 😊\nTerima kasih! 🙏`;
+    
+    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   };
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "0 20px 24px",
-      background: "var(--card-bg)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 20,
-      paddingTop: 10
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      margin: 0
-    }
-  }, initialData ? "Edit Pelanggan" : "Pelanggan Baru"), /*#__PURE__*/React.createElement("button", {
-    onClick: onClose,
-    style: {
-      background: "transparent",
-      border: "none",
-      fontSize: 20,
-      color: "var(--text-main)"
-    }
-  }, "\u2715")), /*#__PURE__*/React.createElement("input", {
-    style: _objectSpread({}, inputStyle),
-    placeholder: "ID Pelanggan (MR-0001)",
-    value: form.customerId,
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        customerId: e.target.value
-      }));
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    style: inputStyle,
-    placeholder: "Nama Lengkap",
-    value: form.nama,
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        nama: e.target.value
-      }));
-    }
-  }), /*#__PURE__*/React.createElement("input", {
-    style: inputStyle,
-    type: "tel",
-    placeholder: "No. WA (0812...)",
-    value: form.noWa,
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        noWa: e.target.value.replace(/\D/g, "").replace(/^0/, "62")
-      }));
-    }
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "repeat(5,1fr)",
-      gap: 6,
-      marginBottom: 15
-    }
-  }, PAKET_LIST.map(function (p) {
-    return /*#__PURE__*/React.createElement("button", {
-      key: p.nama,
-      onClick: function onClick() {
-        return setForm(_objectSpread(_objectSpread({}, form), {}, {
-          paket: p.nama,
-          tagihan: String(p.harga)
-        }));
-      },
-      style: {
-        border: form.paket === p.nama ? "2px solid ".concat(p.color) : "1.5px solid var(--border)",
-        borderRadius: 8,
-        padding: "8px 4px",
-        background: form.paket === p.nama ? p.color + "15" : "transparent",
-        color: "var(--text-main)",
-        fontSize: 11,
-        fontWeight: 700
-      }
-    }, p.nama);
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    style: inputStyle,
-    type: "tel",
-    placeholder: "Tagihan (Rp)",
-    value: form.tagihan ? formatRupiah(form.tagihan) : "",
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        tagihan: e.target.value.replace(/\D/g, "")
-      }));
-    }
-  }), /*#__PURE__*/React.createElement("select", {
-    style: inputStyle,
-    value: form.statusKlien,
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        statusKlien: e.target.value
-      }));
-    }
-  }, STATUS_KLIEN.map(function (s) {
-    return /*#__PURE__*/React.createElement("option", {
-      key: s,
-      value: s
-    }, s);
-  }))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("select", {
-    style: inputStyle,
-    value: form.tanggalTerbit,
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        tanggalTerbit: e.target.value
-      }));
-    }
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, "Tgl Terbit"), Array.from({
-    length: 31
-  }, function (_, i) {
-    return /*#__PURE__*/React.createElement("option", {
-      key: i + 1,
-      value: i + 1
-    }, "Tgl ", i + 1);
-  })), /*#__PURE__*/React.createElement("input", {
-    style: inputStyle,
-    type: "month",
-    value: form.startCycle,
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        startCycle: e.target.value
-      }));
-    }
-  })), /*#__PURE__*/React.createElement("textarea", {
-    style: _objectSpread(_objectSpread({}, inputStyle), {}, {
-      height: 80,
-      resize: "none"
-    }),
-    placeholder: "Catatan CRM (Contoh: Janji bayar tgl 15...)",
-    value: form.catatan,
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        catatan: e.target.value
-      }));
-    }
-  }), error && /*#__PURE__*/React.createElement("div", {
-    style: {
-      color: "#DC2626",
-      fontSize: 13,
-      marginBottom: 10,
-      fontWeight: 600
-    }
-  }, "\u26A0\uFE0F ", error), /*#__PURE__*/React.createElement("button", {
-    onClick: handleSave,
-    style: {
-      width: "100%",
-      background: "#4C1D95",
-      color: "white",
-      border: "none",
-      borderRadius: 12,
-      padding: "14px",
-      fontSize: 15,
-      fontWeight: 700
-    }
-  }, "Simpan Data"));
-};
-var App = function App() {
-  var _useState9 = useState(false),
-    _useState0 = _slicedToArray(_useState9, 2),
-    isLoggedIn = _useState0[0],
-    setIsLoggedIn = _useState0[1];
-  var _useState1 = useState([]),
-    _useState10 = _slicedToArray(_useState1, 2),
-    pelanggan = _useState10[0],
-    setPelanggan = _useState10[1];
-  var _useState11 = useState(true),
-    _useState12 = _slicedToArray(_useState11, 2),
-    loading = _useState12[0],
-    setLoading = _useState12[1];
-  var _useState13 = useState("semua"),
-    _useState14 = _slicedToArray(_useState13, 2),
-    filter = _useState14[0],
-    setFilter = _useState14[1];
-  var _useState15 = useState(""),
-    _useState16 = _slicedToArray(_useState15, 2),
-    search = _useState16[0],
-    setSearch = _useState16[1];
-  var _useState17 = useState(false),
-    _useState18 = _slicedToArray(_useState17, 2),
-    showForm = _useState18[0],
-    setShowForm = _useState18[1];
-  var _useState19 = useState(null),
-    _useState20 = _slicedToArray(_useState19, 2),
-    editItem = _useState20[0],
-    setEditItem = _useState20[1];
-  var _useState21 = useState("tagihan"),
-    _useState22 = _slicedToArray(_useState21, 2),
-    mode = _useState22[0],
-    setMode = _useState22[1];
-  var _useState23 = useState("light"),
-    _useState24 = _slicedToArray(_useState23, 2),
-    theme = _useState24[0],
-    setTheme = _useState24[1];
-  var _useState25 = useState(15),
-    _useState26 = _slicedToArray(_useState25, 2),
-    visibleCount = _useState26[0],
-    setVisibleCount = _useState26[1];
-  useEffect(function () {
-    var savedTheme = localStorage.getItem("mr-theme");
-    if (savedTheme) setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme || 'light');
-  }, []);
-  var toggleTheme = function toggleTheme() {
-    var newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("mr-theme", newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+
+  const exportToCSV = (data) => {
+    const headers = ["ID Pelanggan", "Nama", "No WA", "Paket", "Tagihan", "Tgl Terbit", "Status CRM", "Lunas Bulan Ini", "Catatan"];
+    const rows = data.map(p => [
+      p.customerId, p.nama, p.noWa, p.paket, p.tagihan, p.tanggalTerbit, p.statusKlien, isLunas(p) ? "Ya" : "Tidak", `"${(p.catatan || "").replace(/"/g, '""')}"`
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Data_Pelanggan_${getNow().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
-  useEffect(function () {
-    if (!isLoggedIn) return;
-    try {
-      var cached = localStorage.getItem(STORAGE_KEY);
-      if (cached) setPelanggan(JSON.parse(cached));
-    } catch (e) {}
-    fetch(SCRIPT_URL + "?action=getAll").then(function (res) {
-      return res.json();
-    }).then(function (json) {
-      if (json.success) {
-        setPelanggan(json.data);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
-      }
-      setLoading(false);
-    }).catch(function () {
-      return setLoading(false);
-    });
-  }, [isLoggedIn]);
-  var syncData = function syncData(data) {
-    setPelanggan(data);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {}
-    fetch(SCRIPT_URL + "?action=save", {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)
-    });
-  };
-  var handleSave = function handleSave(data) {
-    var updated = editItem ? pelanggan.map(function (p) {
-      return p.id === data.id ? data : p;
-    }) : [].concat(_toConsumableArray(pelanggan), [_objectSpread(_objectSpread({}, data), {}, {
-      id: Date.now(),
-      paidCycle: null
-    })]);
-    syncData(updated);
-    setShowForm(false);
-    setEditItem(null);
-  };
-  var toggleLunas = function toggleLunas(p) {
-    var cycle = getCurrentBillingCycle(p.tanggalTerbit);
-    syncData(pelanggan.map(function (x) {
-      return x.id === p.id ? _objectSpread(_objectSpread({}, x), {}, {
-        paidCycle: p.paidCycle === cycle ? null : cycle
-      }) : x;
-    }));
-  };
-  var handleDelete = function handleDelete(id) {
-    if (window.confirm("Yakin hapus?")) syncData(pelanggan.filter(function (x) {
-      return x.id !== id;
-    }));
-  };
-  var stats = useMemo(function () {
-    var lunas = 0,
-      belum = 0,
-      uLunas = 0,
-      uBelum = 0;
-    pelanggan.forEach(function (p) {
-      var amt = Number(p.tagihan) || 0;
-      if (isLunas(p)) {
-        lunas++;
-        uLunas += amt;
-      } else {
-        belum++;
-        uBelum += amt;
-      }
-    });
-    return {
-      lunas: lunas,
-      belum: belum,
-      total: uLunas + uBelum,
-      uLunas: uLunas,
-      uBelum: uBelum
+
+  // ===== COMPONENTS =====
+  const LoginScreen = ({ onLogin }) => {
+    const [pin, setPin] = useState("");
+    const [error, setError] = useState(false);
+    const handleLogin = () => {
+      if (pin === PIN_RAHASIA) onLogin();
+      else { setError(true); setPin(""); setTimeout(() => setError(false), 500); }
     };
-  }, [pelanggan]);
-  var filtered = useMemo(function () {
-    return pelanggan.filter(function (p) {
-      var m = (p.nama || "").toLowerCase().includes(search.toLowerCase()) || (p.customerId || "").toLowerCase().includes(search.toLowerCase());
-      if (filter === "lunas") return m && isLunas(p);
-      if (filter === "belum") return m && !isLunas(p);
-      return m;
-    }).sort(function (a, b) {
-      var aU = !isLunas(a) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(a.tanggalTerbit).phase);
-      var bU = !isLunas(b) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(b.tanggalTerbit).phase);
-      return aU !== bU ? aU ? -1 : 1 : getDaysUntilTerbit(a.tanggalTerbit) - getDaysUntilTerbit(b.tanggalTerbit);
-    });
-  }, [pelanggan, filter, search]);
-  if (!isLoggedIn) return /*#__PURE__*/React.createElement(LoginScreen, {
-    onLogin: function onLogin() {
-      return setIsLoggedIn(true);
-    }
-  });
-  if (loading) return /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      height: "100vh",
-      justifyContent: "center",
-      alignItems: "center"
-    }
-  }, "Memuat data...");
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      maxWidth: 480,
-      margin: "0 auto",
-      paddingBottom: 100
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "linear-gradient(160deg, #5B21B6, #4C1D95)",
-      padding: "20px 20px 25px",
-      color: "white",
-      borderBottomLeftRadius: 24,
-      borderBottomRightRadius: 24
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      letterSpacing: 2,
-      opacity: 0.7,
-      textTransform: "uppercase",
-      fontWeight: 700
-    }
-  }, "Dashboard"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 22,
-      fontWeight: 800
-    }
-  }, "MoraRepublic")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: toggleTheme,
-    style: {
-      background: "rgba(255,255,255,0.1)",
-      border: "none",
-      borderRadius: "50%",
-      width: 36,
-      height: 36,
-      color: "white",
-      fontSize: 16
-    }
-  }, theme === 'light' ? '🌙' : '☀️'), /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      return exportToCSV(pelanggan);
-    },
-    style: {
-      background: "rgba(255,255,255,0.1)",
-      border: "none",
-      borderRadius: "50%",
-      width: 36,
-      height: 36,
-      color: "white",
-      fontSize: 16
-    },
-    title: "Export CSV"
-  }, "\uD83D\uDCE5"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "rgba(255,255,255,0.1)",
-      borderRadius: 16,
-      padding: 15
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12,
-      opacity: 0.8,
-      marginBottom: 4
-    }
-  }, "Potensi Omzet"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 28,
-      fontWeight: 800,
-      marginBottom: 10
-    }
-  }, formatRupiah(stats.total)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      background: "rgba(16, 185, 129, 0.2)",
-      borderRadius: 10,
-      padding: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      opacity: 0.8
-    }
-  }, "Cair (", stats.lunas, ")"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700,
-      color: "#34D399"
-    }
-  }, formatRupiah(stats.uLunas))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      background: "rgba(239, 68, 68, 0.2)",
-      borderRadius: 10,
-      padding: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      opacity: 0.8
-    }
-  }, "Nunggak (", stats.belum, ")"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700,
-      color: "#FCA5A5"
-    }
-  }, formatRupiah(stats.uBelum)))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "20px 16px 10px"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      marginBottom: 15
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      return setMode("tagihan");
-    },
-    style: {
-      flex: 1,
-      background: mode === "tagihan" ? "var(--purple)" : "transparent",
-      color: mode === "tagihan" ? "white" : "var(--text-muted)",
-      border: "1.5px solid var(--border)",
-      padding: "10px",
-      borderRadius: 10,
-      fontSize: 12,
-      fontWeight: 700
-    }
-  }, "\uD83D\uDCDD Tagihan"), /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      return setMode("promo");
-    },
-    style: {
-      flex: 1,
-      background: mode === "promo" ? "var(--orange)" : "transparent",
-      color: mode === "promo" ? "white" : "var(--text-muted)",
-      border: "1.5px solid var(--border)",
-      padding: "10px",
-      borderRadius: 10,
-      fontSize: 12,
-      fontWeight: 700
-    }
-  }, "\uD83C\uDF81 Promo")), /*#__PURE__*/React.createElement("input", {
-    placeholder: "\uD83D\uDD0D Cari nama / ID...",
-    value: search,
-    onChange: function onChange(e) {
-      setSearch(e.target.value);
-      setVisibleCount(15);
-    },
-    style: {
-      width: "100%",
-      padding: "12px 16px",
-      borderRadius: 12,
-      border: "1.5px solid var(--border)",
-      marginBottom: 15,
-      background: "var(--card-bg)"
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8
-    }
-  }, [['semua', 'Semua'], ['belum', 'Belum Bayar'], ['lunas', 'Lunas']].map(function (_ref3) {
-    var _ref4 = _slicedToArray(_ref3, 2),
-      v = _ref4[0],
-      l = _ref4[1];
-    return /*#__PURE__*/React.createElement("button", {
-      key: v,
-      onClick: function onClick() {
-        setFilter(v);
-        setVisibleCount(15);
-      },
-      style: {
-        padding: "6px 14px",
-        borderRadius: 20,
-        border: "1px solid var(--border)",
-        fontSize: 12,
-        fontWeight: 700,
-        background: filter === v ? "var(--text-main)" : "var(--card-bg)",
-        color: filter === v ? "var(--bg-color)" : "var(--text-muted)"
-      }
-    }, l);
-  }))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "0 16px",
-      display: "flex",
-      flexDirection: "column",
-      gap: 12
-    }
-  }, filtered.slice(0, visibleCount).map(function (p) {
-    var lunas = isLunas(p);
-    var status = getBillingPhase(p.tanggalTerbit);
-    return /*#__PURE__*/React.createElement("div", {
-      key: p.id,
-      className: "card-enter",
-      style: {
-        background: "var(--card-bg)",
-        padding: 16,
-        borderRadius: 16,
-        borderLeft: "4px solid ".concat(lunas ? "var(--green)" : status.color),
-        opacity: lunas ? 0.7 : 1
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        justifyContent: "space-between"
-      }
-    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        gap: 6,
-        alignItems: "center",
-        marginBottom: 4
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 11,
-        fontWeight: 700,
-        color: "var(--text-muted)"
-      }
-    }, "#", p.customerId), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 10,
-        fontWeight: 700,
-        background: "var(--bg-color)",
-        padding: "2px 6px",
-        borderRadius: 4
-      }
-    }, p.statusKlien || "Aktif")), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 16,
-        fontWeight: 800
-      }
-    }, p.nama), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 12,
-        color: "var(--text-muted)",
-        marginTop: 2
-      }
-    }, "\uD83D\uDCF1 ", p.noWa)), /*#__PURE__*/React.createElement("div", {
-      style: {
-        textAlign: "right"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "inline-block",
-        background: "var(--bg-color)",
-        padding: "2px 8px",
-        borderRadius: 6,
-        fontSize: 10,
-        fontWeight: 800,
-        marginBottom: 4
-      }
-    }, p.paket), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 16,
-        fontWeight: 800,
-        color: lunas ? "var(--green)" : "var(--text-main)"
-      }
-    }, formatRupiah(p.tagihan)))), p.catatan && /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "var(--text-muted)",
-        marginTop: 10,
-        padding: 8,
-        background: "var(--bg-color)",
-        borderRadius: 8
-      }
-    }, "\uD83D\uDCDD ", p.catatan), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginTop: 12,
-        paddingTop: 12,
-        borderTop: "1px dashed var(--border)"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 11,
-        color: "var(--text-muted)"
-      }
-    }, "Terbit ", /*#__PURE__*/React.createElement("b", null, p.tanggalTerbit), " \u2192 JT ", /*#__PURE__*/React.createElement("b", null, Number(p.tanggalTerbit) + HARI_TEMPO > 31 ? Number(p.tanggalTerbit) + HARI_TEMPO - 30 : Number(p.tanggalTerbit) + HARI_TEMPO)), !lunas && /*#__PURE__*/React.createElement("span", {
-      style: {
-        background: status.bg,
-        color: status.color,
-        padding: "3px 8px",
-        borderRadius: 10,
-        fontSize: 10,
-        fontWeight: 700
-      }
-    }, "\u25CF ", status.label)), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        gap: 8,
-        marginTop: 12
-      }
-    }, /*#__PURE__*/React.createElement("a", {
-      href: buildWALink(p.noWa, p.nama, p.tanggalTerbit, p.tagihan, p.customerId, mode),
-      target: "_blank",
-      style: {
-        flex: 1,
-        background: mode === "promo" ? "var(--orange)" : status.urgent && !lunas ? "var(--red)" : "var(--green)",
-        color: "white",
-        textAlign: "center",
-        padding: "10px",
-        borderRadius: 10,
-        fontSize: 12,
-        fontWeight: 700,
-        textDecoration: "none"
-      }
-    }, mode === "promo" ? "🎁 Promo" : "💬 WA Reminder"), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        return toggleLunas(p);
-      },
-      style: {
-        flex: 1,
-        background: lunas ? "transparent" : "var(--bg-color)",
-        color: lunas ? "var(--red)" : "var(--green)",
-        border: "1.5px solid var(--border)",
-        borderRadius: 10,
-        fontSize: 12,
-        fontWeight: 700
-      }
-    }, lunas ? "Batal Lunas" : "✓ Lunas"), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        var _p$joinDate;
-        setEditItem(_objectSpread(_objectSpread({}, p), {}, {
-          startCycle: (_p$joinDate = p.joinDate) === null || _p$joinDate === void 0 ? void 0 : _p$joinDate.substring(0, 7)
-        }));
-        setShowForm(true);
-      },
-      style: {
-        width: 40,
-        background: "var(--bg-color)",
-        color: "var(--text-main)",
-        border: "none",
-        borderRadius: 10
-      }
-    }, "\u270F\uFE0F"), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        return handleDelete(p.id);
-      },
-      style: {
-        width: 40,
-        background: "rgba(220,38,38,0.1)",
-        color: "var(--red)",
-        border: "none",
-        borderRadius: 10
-      }
-    }, "\uD83D\uDDD1\uFE0F")));
-  }), filtered.length > visibleCount && /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      return setVisibleCount(function (c) {
-        return c + 15;
+    return (
+      <div style={{ height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(160deg, #5B21B6, #3B0764)", padding: 20 }}>
+        <div className={error ? "shake" : ""} style={{ background: "white", padding: 30, borderRadius: 20, width: "100%", maxWidth: 360, textAlign: "center" }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
+          <h2 style={{ margin: "0 0 5px", color: "#111827" }}>Keamanan Sistem</h2>
+          <p style={{ margin: "0 0 20px", color: "#6B7280", fontSize: 13 }}>Masukkan PIN untuk mengakses data.</p>
+          <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} placeholder="• • • •" style={{ width: "100%", textAlign: "center", fontSize: 24, letterSpacing: 10, padding: 15, borderRadius: 12, border: error ? "2px solid #DC2626" : "2px solid #E5E7EB", marginBottom: 20 }} maxLength={6} />
+          <button onClick={handleLogin} style={{ width: "100%", background: "#6D28D9", color: "white", padding: 15, borderRadius: 12, border: "none", fontSize: 16, fontWeight: 700 }}>Buka Sistem</button>
+        </div>
+      </div>
+    );
+  };
+
+  const AddForm = ({ initialData, onSave, onClose }) => {
+    const [form, setForm] = useState(initialData || { customerId: "", nama: "", noWa: "", paket: "", tagihan: "", tanggalTerbit: "", startCycle: "", statusKlien: "Aktif", catatan: "" });
+    const [error, setError] = useState("");
+
+    const handleSave = () => {
+      if (!form.customerId.trim()) return setError("ID Pelanggan wajib diisi");
+      if (!form.nama.trim()) return setError("Nama wajib diisi");
+      if (!form.noWa || form.noWa.length < 10) return setError("No. WhatsApp minimal 10 angka");
+      onSave({ ...initialData, ...form, customerId: form.customerId.trim().toUpperCase(), joinDate: form.startCycle ? form.startCycle + "-01" : "" });
+    };
+
+    const inputStyle = { width: "100%", borderRadius: 10, padding: "11px 14px", fontSize: 14, marginBottom: 15 };
+    
+    return (
+      <div style={{ padding: "0 20px 24px", background: "var(--card-bg)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingTop: 10 }}>
+          <h3 style={{ margin: 0 }}>{initialData ? "Edit Pelanggan" : "Pelanggan Baru"}</h3>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", fontSize: 20, color: "var(--text-main)" }}>✕</button>
+        </div>
+
+        <input style={{...inputStyle}} placeholder="ID Pelanggan (MR-0001)" value={form.customerId} onChange={e => setForm({...form, customerId: e.target.value})} />
+        
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <input style={inputStyle} placeholder="Nama Lengkap" value={form.nama} onChange={e => setForm({...form, nama: e.target.value})} />
+          <input style={inputStyle} type="tel" placeholder="No. WA (0812...)" value={form.noWa} onChange={e => setForm({...form, noWa: e.target.value.replace(/\D/g, "").replace(/^0/, "62")})} />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6, marginBottom: 15 }}>
+          {PAKET_LIST.map(p => (
+            <button key={p.nama} onClick={() => setForm({...form, paket: p.nama, tagihan: String(p.harga)})} style={{ border: form.paket === p.nama ? `2px solid ${p.color}` : "1.5px solid var(--border)", borderRadius: 8, padding: "8px 4px", background: form.paket === p.nama ? p.color+"15" : "transparent", color: "var(--text-main)", fontSize: 11, fontWeight: 700 }}>
+              {p.nama}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <input style={inputStyle} type="tel" placeholder="Tagihan (Rp)" value={form.tagihan ? formatRupiah(form.tagihan) : ""} onChange={e => setForm({...form, tagihan: e.target.value.replace(/\D/g, "")})} />
+          <select style={inputStyle} value={form.statusKlien} onChange={e => setForm({...form, statusKlien: e.target.value})}>
+            {STATUS_KLIEN.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <select style={inputStyle} value={form.tanggalTerbit} onChange={e => setForm({...form, tanggalTerbit: e.target.value})}>
+            <option value="">Tgl Terbit</option>
+            {Array.from({length: 31}, (_, i) => <option key={i+1} value={i+1}>Tgl {i+1}</option>)}
+          </select>
+          <input style={inputStyle} type="month" value={form.startCycle} onChange={e => setForm({...form, startCycle: e.target.value})} />
+        </div>
+
+        <textarea style={{...inputStyle, height: 80, resize: "none"}} placeholder="Catatan CRM (Contoh: Janji bayar tgl 15...)" value={form.catatan} onChange={e => setForm({...form, catatan: e.target.value})} />
+
+        {error && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 10, fontWeight: 600 }}>⚠️ {error}</div>}
+        <button onClick={handleSave} style={{ width: "100%", background: "#4C1D95", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 700 }}>Simpan Data</button>
+      </div>
+    );
+  };
+
+  const App = () => {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [pelanggan, setPelanggan] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState("semua");
+    const [search, setSearch] = useState("");
+    const [showForm, setShowForm] = useState(false);
+    const [editItem, setEditItem] = useState(null);
+    const [mode, setMode] = useState("tagihan"); 
+    const [theme, setTheme] = useState("light");
+    const [visibleCount, setVisibleCount] = useState(15); 
+
+    useEffect(() => {
+      const savedTheme = localStorage.getItem("mr-theme");
+      if(savedTheme) setTheme(savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme || 'light');
+    }, []);
+
+    const toggleTheme = () => {
+      const newTheme = theme === "light" ? "dark" : "light";
+      setTheme(newTheme);
+      localStorage.setItem("mr-theme", newTheme);
+      document.documentElement.setAttribute('data-theme', newTheme);
+    };
+
+    useEffect(() => {
+      if (!isLoggedIn) return;
+      try { const cached = localStorage.getItem(STORAGE_KEY); if (cached) {
+            const data = JSON.parse(cached);
+            setPelanggan(data.map(p => ({...p,
+              tagihan: String(p.tagihan||"0").replace(/[^0-9]/g,"") || "0",
+              joinDate: String(p.joinDate||"").substring(0,7)
+            })));
+          } } catch (e) {}
+      fetch(SCRIPT_URL + "?action=getAll").then(res => res.json()).then(json => {
+        if (json.success) {
+          const norm = json.data.map(p => ({...p,
+            tagihan: String(p.tagihan||"0").replace(/[^0-9]/g,"") || "0",
+            joinDate: String(p.joinDate||"").substring(0,7)
+          }));
+          setPelanggan(norm);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(norm));
+        }
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    }, [isLoggedIn]);
+
+    const syncData = (data) => {
+      setPelanggan(data);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+      fetch(SCRIPT_URL + "?action=save", { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    };
+
+    const handleSave = (data) => {
+      const updated = editItem ? pelanggan.map(p => p.id === data.id ? data : p) : [...pelanggan, { ...data, id: Date.now(), paidCycle: null }];
+      syncData(updated); setShowForm(false); setEditItem(null);
+    };
+
+    const toggleLunas = (p) => {
+      const cycle = getCurrentBillingCycle(p.tanggalTerbit);
+      syncData(pelanggan.map(x => x.id === p.id ? { ...x, paidCycle: p.paidCycle === cycle ? null : cycle } : x));
+    };
+
+    const handleDelete = (id) => {
+      if(window.confirm("Yakin hapus?")) syncData(pelanggan.filter(x => x.id !== id));
+    };
+
+    const stats = useMemo(() => {
+      let lunas = 0, belum = 0, uLunas = 0, uBelum = 0;
+      pelanggan.forEach(p => {
+        const amt = Number(p.tagihan) || 0;
+        if (isLunas(p)) { lunas++; uLunas += amt; } else { belum++; uBelum += amt; }
       });
-    },
-    style: {
-      padding: 15,
-      background: "var(--card-bg)",
-      border: "1.5px solid var(--border)",
-      borderRadius: 12,
-      color: "var(--purple)",
-      fontWeight: 700,
-      fontSize: 14
-    }
-  }, "Muat Lebih Banyak")), /*#__PURE__*/React.createElement("button", {
-    onClick: function onClick() {
-      setEditItem(null);
-      setShowForm(true);
-    },
-    style: {
-      position: "fixed",
-      bottom: 20,
-      right: 20,
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      background: "var(--purple-dark)",
-      color: "white",
-      border: "none",
-      fontSize: 30,
-      boxShadow: "0 4px 15px rgba(76,29,149,0.4)"
-    }
-  }, "+"), showForm && /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "fixed",
-      inset: 0,
-      zIndex: 100,
-      background: "rgba(0,0,0,0.6)",
-      display: "flex",
-      alignItems: "flex-end"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "sheet-enter",
-    style: {
-      background: "var(--bg-color)",
-      width: "100%",
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      maxHeight: "90vh",
-      overflowY: "auto"
-    }
-  }, /*#__PURE__*/React.createElement(AddForm, {
-    initialData: editItem,
-    onSave: handleSave,
-    onClose: function onClose() {
-      return setShowForm(false);
-    }
-  }))));
-};
-ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
-} // end initApp
-initApp();
+      return { lunas, belum, total: uLunas + uBelum, uLunas, uBelum };
+    }, [pelanggan]);
 
-// PWA Service Worker Registration
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function (err) {
-      return console.log('SW Registration failed:', err);
+    const filtered = useMemo(() => {
+      return pelanggan.filter(p => {
+        const m = (p.nama||"").toLowerCase().includes(search.toLowerCase()) || (p.customerId||"").toLowerCase().includes(search.toLowerCase());
+        if (filter === "lunas") return m && isLunas(p);
+        if (filter === "belum") return m && !isLunas(p);
+        return m;
+      }).sort((a, b) => {
+        const aU = !isLunas(a) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(a.tanggalTerbit).phase);
+        const bU = !isLunas(b) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(b.tanggalTerbit).phase);
+        return aU !== bU ? (aU ? -1 : 1) : getDaysUntilTerbit(a.tanggalTerbit) - getDaysUntilTerbit(b.tanggalTerbit);
+      });
+    }, [pelanggan, filter, search]);
+
+    if (!isLoggedIn) return <LoginScreen onLogin={() => setIsLoggedIn(true)} />;
+    if (loading) return <div style={{display:"flex", height:"100vh", justifyContent:"center", alignItems:"center"}}>Memuat data...</div>;
+
+    return (
+      <div style={{ maxWidth: 480, margin: "0 auto", paddingBottom: 100 }}>
+        {/* Header */}
+        <div style={{ background: "linear-gradient(160deg, #5B21B6, #4C1D95)", padding: "20px 20px 25px", color: "white", borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div>
+              <div style={{ fontSize: 11, letterSpacing: 2, opacity: 0.7, textTransform: "uppercase", fontWeight: 700 }}>Dashboard</div>
+              <div style={{ fontSize: 22, fontWeight: 800 }}>MoraRepublic</div>
+            </div>
+            <div style={{display: "flex", gap: 10}}>
+              <button onClick={toggleTheme} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 36, height: 36, color: "white", fontSize: 16 }}>{theme === 'light' ? '🌙' : '☀️'}</button>
+              <button onClick={() => exportToCSV(pelanggan)} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 36, height: 36, color: "white", fontSize: 16 }} title="Export CSV">📥</button>
+            </div>
+          </div>
+
+          <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 16, padding: 15 }}>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>Potensi Omzet</div>
+            <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 10 }}>{formatRupiah(stats.total)}</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1, background: "rgba(16, 185, 129, 0.2)", borderRadius: 10, padding: 10 }}>
+                <div style={{ fontSize: 10, opacity: 0.8 }}>Cair ({stats.lunas})</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#34D399" }}>{formatRupiah(stats.uLunas)}</div>
+              </div>
+              <div style={{ flex: 1, background: "rgba(239, 68, 68, 0.2)", borderRadius: 10, padding: 10 }}>
+                <div style={{ fontSize: 10, opacity: 0.8 }}>Nunggak ({stats.belum})</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#FCA5A5" }}>{formatRupiah(stats.uBelum)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Toolbar */}
+        <div style={{ padding: "20px 16px 10px" }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 15 }}>
+            <button onClick={() => setMode("tagihan")} style={{ flex: 1, background: mode === "tagihan" ? "var(--purple)" : "transparent", color: mode === "tagihan" ? "white" : "var(--text-muted)", border: "1.5px solid var(--border)", padding: "10px", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>📝 Tagihan</button>
+            <button onClick={() => setMode("promo")} style={{ flex: 1, background: mode === "promo" ? "var(--orange)" : "transparent", color: mode === "promo" ? "white" : "var(--text-muted)", border: "1.5px solid var(--border)", padding: "10px", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>🎁 Promo</button>
+          </div>
+
+          <input placeholder="🔍 Cari nama / ID..." value={search} onChange={e => { setSearch(e.target.value); setVisibleCount(15); }} style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1.5px solid var(--border)", marginBottom: 15, background: "var(--card-bg)" }} />
+          
+          <div style={{ display: "flex", gap: 8 }}>
+            {[['semua', 'Semua'], ['belum', 'Belum Bayar'], ['lunas', 'Lunas']].map(([v, l]) => (
+              <button key={v} onClick={() => { setFilter(v); setVisibleCount(15); }} style={{ padding: "6px 14px", borderRadius: 20, border: "1px solid var(--border)", fontSize: 12, fontWeight: 700, background: filter === v ? "var(--text-main)" : "var(--card-bg)", color: filter === v ? "var(--bg-color)" : "var(--text-muted)" }}>{l}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* List */}
+        <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {filtered.slice(0, visibleCount).map(p => {
+            const lunas = isLunas(p);
+            const status = getBillingPhase(p.tanggalTerbit);
+            return (
+              <div key={p.id} className="card-enter" style={{ background: "var(--card-bg)", padding: 16, borderRadius: 16, borderLeft: `4px solid ${lunas ? "var(--green)" : status.color}`, opacity: lunas ? 0.7 : 1 }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ display:"flex", gap:6, alignItems:"center", marginBottom:4 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>#{p.customerId}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, background: "var(--bg-color)", padding: "2px 6px", borderRadius: 4 }}>{p.statusKlien || "Aktif"}</span>
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 800 }}>{p.nama}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>📱 {p.noWa}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ display: "inline-block", background: "var(--bg-color)", padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, marginBottom: 4 }}>{p.paket}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: lunas ? "var(--green)" : "var(--text-main)" }}>{formatRupiah(p.tagihan)}</div>
+                  </div>
+                </div>
+                
+                {p.catatan && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 10, padding: 8, background: "var(--bg-color)", borderRadius: 8 }}>📝 {p.catatan}</div>}
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px dashed var(--border)" }}>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Terbit <b>{p.tanggalTerbit}</b> → JT <b>{Number(p.tanggalTerbit) + HARI_TEMPO > 31 ? Number(p.tanggalTerbit) + HARI_TEMPO - 30 : Number(p.tanggalTerbit) + HARI_TEMPO}</b></div>
+                  {!lunas && <span style={{ background: status.bg, color: status.color, padding: "3px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700 }}>● {status.label}</span>}
+                </div>
+
+                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                  <a href={buildWALink(p.noWa, p.nama, p.tanggalTerbit, p.tagihan, p.customerId, mode)} target="_blank" style={{ flex: 1, background: mode === "promo" ? "var(--orange)" : (status.urgent && !lunas ? "var(--red)" : "var(--green)"), color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 12, fontWeight: 700, textDecoration: "none" }}>
+                    {mode === "promo" ? "🎁 Promo" : "💬 WA Reminder"}
+                  </a>
+                  <button onClick={() => toggleLunas(p)} style={{ flex: 1, background: lunas ? "transparent" : "var(--bg-color)", color: lunas ? "var(--red)" : "var(--green)", border: "1.5px solid var(--border)", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>
+                    {lunas ? "Batal Lunas" : "✓ Lunas"}
+                  </button>
+                  <button onClick={() => { setEditItem({...p, startCycle: p.joinDate?.substring(0,7)}); setShowForm(true); }} style={{ width: 40, background: "var(--bg-color)", color: "var(--text-main)", border: "none", borderRadius: 10 }}>✏️</button>
+                  <button onClick={() => handleDelete(p.id)} style={{ width: 40, background: "rgba(220,38,38,0.1)", color: "var(--red)", border: "none", borderRadius: 10 }}>🗑️</button>
+                </div>
+              </div>
+            );
+          })}
+          {filtered.length > visibleCount && <button onClick={() => setVisibleCount(c => c + 15)} style={{ padding: 15, background: "var(--card-bg)", border: "1.5px solid var(--border)", borderRadius: 12, color: "var(--purple)", fontWeight: 700, fontSize: 14 }}>Muat Lebih Banyak</button>}
+        </div>
+
+        <button onClick={() => { setEditItem(null); setShowForm(true); }} style={{ position: "fixed", bottom: 20, right: 20, width: 60, height: 60, borderRadius: 30, background: "var(--purple-dark)", color: "white", border: "none", fontSize: 30, boxShadow: "0 4px 15px rgba(76,29,149,0.4)" }}>+</button>
+
+        {showForm && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "flex-end" }}>
+            <div className="sheet-enter" style={{ background: "var(--bg-color)", width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "90vh", overflowY: "auto" }}>
+              <AddForm initialData={editItem} onSave={handleSave} onClose={() => setShowForm(false)} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+  // PWA Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Registration failed:', err));
     });
-  });
-}
-
+  }
 </script>
 </body>
 </html>
