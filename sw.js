@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moracms-v1';
+const CACHE_NAME = 'moracms-v2';
 const urlsToCache = [
   './',
   'index.html',
