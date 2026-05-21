@@ -43,8 +43,8 @@
 <script type="text/babel">
   const { useState, useEffect, useMemo } = React;
 
-  // ===== KONFIGURASI UTAMA =====
-  const STORAGE_KEY = "myrepublic-pro-v7";
+  // ===== KONFIGURASI =====
+  const STORAGE_KEY = "myrepublic-pro-v8";
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZHr6XA1zv3jHF8kLtzRveKx64zyxUPx_GQKX08abqkXZRN2iW_PW6I3KYEoP9trRpXA/exec";
   const PIN_RAHASIA = "2604";
   const HARI_TEMPO = 6;
@@ -59,7 +59,7 @@
 
   const STATUS_KLIEN = ["Aktif", "Prospek", "Menunggak", "Isolasi", "Putus"];
 
-  // ===== FUNGSI PENDUKUNG =====
+  // ===== HELPER FUNCTIONS =====
   const vibe = () => { if (navigator.vibrate) navigator.vibrate(40); };
   const getNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
   const formatRupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");
@@ -81,6 +81,26 @@
   };
 
   const isLunas = (p) => p.paidCycle ? String(p.paidCycle).includes(getCurrentBillingCycle(p.tanggalTerbit)) : false;
+
+  // LOGIKA HITUNG SIKLUS (CYCLE NUMBER) DARI BULAN JOIN
+  const getCycleNumber = (p) => {
+    if (!p.joinDate) return null;
+    const parts = String(p.joinDate).split("-");
+    const startYear = parseInt(parts[0], 10);
+    const startMonth = parseInt(parts[1], 10) - 1;
+    const today = getNow();
+    const monthsDiff = (today.getFullYear() - startYear) * 12 + (today.getMonth() - startMonth);
+    return Math.max(1, monthsDiff + 1);
+  };
+
+  // LOGIKA BADGE STYLE UNTUK SIKLUS 1/2/3
+  const getCycleBadgeStyle = (cycle) => {
+    if (!cycle) return null;
+    if (cycle === 1) return { bg: "#EFF6FF", color: "#1D4ED8", label: "Siklus 1 (Baru)" };
+    if (cycle === 2) return { bg: "#E6F4EA", color: "#137333", label: "Siklus 2" };
+    if (cycle === 3) return { bg: "#FFF7ED", color: "#C2410C", label: "Siklus 3" };
+    return { bg: "#F3F4F6", color: "#5F6368", label: `Siklus ${cycle}` };
+  };
   
   const getDaysUntilTerbit = (t) => {
     const today = getNow();
@@ -127,7 +147,7 @@
     document.body.removeChild(link);
   };
 
-  // ===== KOMPONEN UI =====
+  // ===== UI COMPONENTS =====
   const SkeletonLoader = () => (
     <div style={{ background: "white", padding: 16, borderRadius: 16, marginBottom: 12, display: "flex", gap: 15 }}>
       <div style={{ flex: 1 }}>
@@ -237,7 +257,7 @@
         
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div><label style={labelStyle}>Tgl Terbit *</label><select style={getInputStyle("tanggalTerbit")} value={form.tanggalTerbit} onChange={e => setForm({...form, tanggalTerbit: e.target.value})}><option value="">Pilih...</option>{Array.from({length: 31}, (_, i) => <option key={i+1} value={i+1}>Tgl {i+1}</option>)}</select></div>
-          <div><label style={labelStyle}>Bulan Join</label><input style={getInputStyle("startCycle")} type="month" value={form.startCycle} onChange={e => setForm({...form, startCycle: e.target.value})} /></div>
+          <div><label style={labelStyle}>Bulan Join/Pasang *</label><input style={getInputStyle("startCycle")} type="month" value={form.startCycle} onChange={e => setForm({...form, startCycle: e.target.value})} /></div>
         </div>
 
         <label style={labelStyle}>Catatan CRM</label>
@@ -346,7 +366,6 @@
       }).sort((a, b) => {
         if (sort === "nama") return (a.nama || "").localeCompare(b.nama || "");
         if (sort === "tagihan") return (Number(b.tagihan) || 0) - (Number(a.tagihan) || 0);
-        // Default Sort (Jatuh Tempo Terdekat)
         const aU = !isLunas(a) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(a.tanggalTerbit).phase);
         const bU = !isLunas(b) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(b.tanggalTerbit).phase);
         return aU !== bU ? (aU ? -1 : 1) : getDaysUntilTerbit(a.tanggalTerbit) - getDaysUntilTerbit(b.tanggalTerbit);
@@ -385,7 +404,7 @@
           </div>
         </div>
 
-        {/* --- STICKY TOOLBAR --- */}
+        {/* STICKY TOOLBAR */}
         <div className="sticky-top">
           <div style={{ position: "relative", marginBottom: 12 }}>
             <input placeholder="Cari nama atau ID..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", padding: "12px 36px 12px 16px", borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 14, fontWeight: 500, background: "white", color: "#111827", boxSizing: "border-box" }} />
@@ -425,13 +444,25 @@
            filtered.map(p => {
             const lunasStatus = isLunas(p);
             const status = getBillingPhase(p.tanggalTerbit);
+            
+            // Hitung data siklus
+            const cycleNum = getCycleNumber(p);
+            const cycleBadge = getCycleBadgeStyle(cycleNum);
+
             return (
               <div key={p.id} className="card-enter" style={{ background: "white", padding: 16, borderRadius: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", borderLeft: `5px solid ${lunasStatus ? "#10B981" : status.color}`, opacity: lunasStatus ? 0.75 : 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <div>
-                    <div style={{ display:"flex", gap:6, alignItems:"center", marginBottom:4 }}>
+                    <div style={{ display:"flex", gap:6, flexWrap: "wrap", alignItems:"center", marginBottom:6 }}>
                       <span style={{ fontSize: 11, fontWeight: 800, color: "#6D28D9", background: "#EDE9FE", padding: "2px 8px", borderRadius: 6 }}>{p.customerId}</span>
                       <span style={{ fontSize: 10, fontWeight: 700, background: "#F3F4F6", color: "#4B5563", padding: "2px 6px", borderRadius: 4 }}>{p.statusKlien || "Aktif"}</span>
+                      
+                      {/* --- RENDERING PENANDA SIKLUS CRM --- */}
+                      {cycleBadge && (
+                        <span style={{ fontSize: 10, fontWeight: 800, background: cycleBadge.bg, color: cycleBadge.color, padding: "2px 8px", borderRadius: 6, letterSpacing: "0.2px" }}>
+                          {cycleBadge.label}
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>{p.nama}</div>
                     <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2, fontWeight: 500 }}>{p.noWa}</div>
