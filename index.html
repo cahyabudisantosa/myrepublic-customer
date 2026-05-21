@@ -37,10 +37,9 @@
   const { useState, useEffect, useMemo } = React;
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v15";
+  const STORAGE_KEY = "morabilling-pro-v18"; // Cache baru
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
-  const STATUS_KLIEN = ["Aktif", "Prospek", "Menunggak", "Isolasi", "Putus"];
 
   const vibe = () => { if (navigator.vibrate) navigator.vibrate(40); };
   const getNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
@@ -87,6 +86,7 @@
 
   const getBillingPhase = (t) => {
     const today = getNow();
+    today.setHours(0, 0, 0, 0);
     const tgl = Number(t || 1);
     const terbit = new Date(today.getFullYear(), today.getMonth(), tgl);
     const jatuhTempo = new Date(today.getFullYear(), today.getMonth(), tgl + HARI_TEMPO);
@@ -107,8 +107,8 @@
   };
 
   const exportToCSV = (data) => {
-    const headers = ["ID Pelanggan", "Nama", "No WA", "Tagihan", "Tgl Terbit", "Bulan Join", "Status CRM", "Lunas Bulan Ini", "Catatan"];
-    const rows = data.map(p => [p.customerId, p.nama, p.noWa, p.tagihan, p.tanggalTerbit, p.joinDate, p.statusKlien, isLunas(p) ? "Ya" : "Tidak", `"${(p.catatan || "").replace(/"/g, '""')}"`]);
+    const headers = ["ID Pelanggan", "Nama", "No WA", "Tagihan", "Tgl Terbit", "Bulan Join", "Lunas Bulan Ini", "Catatan"];
+    const rows = data.map(p => [p.customerId, p.nama, p.noWa, p.tagihan, p.tanggalTerbit, p.joinDate, isLunas(p) ? "Ya" : "Tidak", `"${(p.catatan || "").replace(/"/g, '""')}"`]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = `Data_MoraBilling_${getNow().getTime()}.csv`;
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
@@ -141,7 +141,7 @@
   };
 
   const AddForm = ({ initialData, onSave, onDelete, onClose }) => {
-    const [form, setForm] = useState(initialData || { customerId: "", nama: "", noWa: "", tagihan: "", tanggalTerbit: "", startCycle: "", statusKlien: "Aktif", catatan: "" });
+    const [form, setForm] = useState(initialData || { customerId: "", nama: "", noWa: "", tagihan: "", tanggalTerbit: "", startCycle: "", catatan: "" });
     const [tagihanUI, setTagihanUI] = useState(initialData ? formatNumberInput(initialData.tagihan) : "");
     const [errorMsg, setErrorMsg] = useState("");
     const [errorFields, setErrorFields] = useState([]);
@@ -161,7 +161,7 @@
 
       if (errs.length > 0) {
         setErrorFields(errs);
-        setErrorMsg("Mohon lengkapi semua kotak yang merah.");
+        setErrorMsg("Mohon lengkapi semua kotak merah.");
         return;
       }
       onSave({...form});
@@ -184,13 +184,12 @@
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div>
+          <div style={{ gridColumn: "1 / -1" }}>
             <label style={labelStyle}>Nominal Tagihan (Rp) *</label>
             <input style={{...getInputStyle("tagihan"), fontWeight:700}} type="tel" placeholder="277.500" value={tagihanUI} onChange={e => {
               const val = e.target.value; setTagihanUI(formatNumberInput(val)); setForm({...form, tagihan: val.replace(/\D/g, "")});
             }} />
           </div>
-          <div><label style={labelStyle}>Status Klien</label><select style={getInputStyle("statusKlien")} value={form.statusKlien} onChange={e => setForm({...form, statusKlien: e.target.value})}>{STATUS_KLIEN.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
         </div>
         
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -198,7 +197,7 @@
           <div><label style={labelStyle}>Bulan Pasang *</label><input style={getInputStyle("startCycle")} type="month" value={form.startCycle} onChange={e => setForm({...form, startCycle: e.target.value})} /></div>
         </div>
 
-        <label style={labelStyle}>Catatan CRM</label>
+        <label style={labelStyle}>Catatan / Keterangan</label>
         <textarea style={{...getInputStyle("catatan"), height: 70, resize: "none"}} placeholder="Contoh: Janji bayar tgl 15..." value={form.catatan} onChange={e => setForm({...form, catatan: e.target.value})} />
 
         {errorMsg && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12, fontWeight: 600, background: "#FEF2F2", padding: "10px", borderRadius: "8px" }}>{errorMsg}</div>}
@@ -216,7 +215,6 @@
     const [pelanggan, setPelanggan] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("semua");
-    const [sort, setSort] = useState("jt");
     const [search, setSearch] = useState("");
     const [showForm, setShowForm] = useState(false);
     const [editItem, setEditItem] = useState(null);
@@ -261,7 +259,6 @@
     const handleSave = (data) => {
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
       
-      // TICK-LOCK: Susun joinDate dengan benar agar tidak tertimpa/kosong
       let finalJoinDate = data.startCycle || "";
       if (finalJoinDate && finalJoinDate.length === 7) { finalJoinDate += "-01"; }
       
@@ -292,12 +289,11 @@
     };
 
     const stats = useMemo(() => {
-      let lunasCount = 0, belumCount = 0, uLunas = 0, uBelum = 0;
+      let lunasCount = 0, belumCount = 0;
       pelanggan.forEach(p => { 
-        const amt = Number(p.tagihan) || 0; 
-        if (isLunas(p)) { lunasCount++; uLunas += amt; } else { belumCount++; uBelum += amt; } 
+        if (isLunas(p)) lunasCount++; else belumCount++; 
       });
-      return { lunas: lunasCount, belum: belumCount, total: uLunas + uBelum, uLunas, uBelum };
+      return { lunas: lunasCount, belum: belumCount, total: pelanggan.length };
     }, [pelanggan]);
 
     const filtered = useMemo(() => {
@@ -308,7 +304,6 @@
         if (filter === "lunas") return isLunas(p);
         if (filter === "belum") return !isLunas(p);
         
-        // Logika filtering shortcut Cycle
         const cycle = getCycleNumber(p);
         if (filter === "c1") return cycle >= 1 && cycle <= 3;
         if (filter === "c4") return cycle >= 4 && cycle <= 6;
@@ -317,13 +312,11 @@
         
         return true;
       }).sort((a, b) => {
-        if (sort === "nama") return (a.nama || "").localeCompare(b.nama || "");
-        if (sort === "tagihan") return (Number(b.tagihan) || 0) - (Number(a.tagihan) || 0);
         const aU = !isLunas(a) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(a.tanggalTerbit).phase);
         const bU = !isLunas(b) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(b.tanggalTerbit).phase);
         return aU !== bU ? (aU ? -1 : 1) : getDaysUntilTerbit(a.tanggalTerbit) - getDaysUntilTerbit(b.tanggalTerbit);
       });
-    }, [pelanggan, filter, search, sort]);
+    }, [pelanggan, filter, search]);
 
     if (!isLoggedIn) return <LoginScreen onLogin={() => setIsLoggedIn(true)} />;
 
@@ -342,16 +335,15 @@
           </div>
 
           <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 16, padding: 15 }}>
-            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>Potensi Omzet</div>
-            <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 15 }}>{formatRupiah(stats.total)}</div>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 15 }}>Ringkasan Klien ({stats.total} ID)</div>
             <div style={{ display: "flex", gap: 10 }}>
-              <div style={{ flex: 1, background: "rgba(16, 185, 129, 0.2)", borderRadius: 10, padding: 10 }}>
-                <div style={{ fontSize: 10, opacity: 0.8 }}>Tercairkan ({stats.lunas})</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#34D399" }}>{formatRupiah(stats.uLunas)}</div>
+              <div style={{ flex: 1, background: "rgba(16, 185, 129, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#34D399" }}>{stats.lunas}</div>
+                <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4, fontWeight: 600 }}>Lunas</div>
               </div>
-              <div style={{ flex: 1, background: "rgba(239, 68, 68, 0.2)", borderRadius: 10, padding: 10 }}>
-                <div style={{ fontSize: 10, opacity: 0.8 }}>Menunggak ({stats.belum})</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#FCA5A5" }}>{formatRupiah(stats.uBelum)}</div>
+              <div style={{ flex: 1, background: "rgba(239, 68, 68, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#FCA5A5" }}>{stats.belum}</div>
+                <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4, fontWeight: 600 }}>Menunggak</div>
               </div>
             </div>
           </div>
@@ -363,7 +355,7 @@
             {search && <button onClick={() => {vibe(); setSearch("");}} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", background: "#F3F4F6", color: "#6B7280", border: "none", fontSize: 12, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>}
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 5, flex: 1 }}>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 5, width: "100%" }}>
               {[
                 ['semua', 'Semua'], ['belum', 'Belum Bayar'], ['lunas', 'Lunas'],
                 ['c1', 'Siklus 1-3'], ['c4', 'Siklus 4-6'], ['c7', 'Siklus 7-12'], ['c12', 'Siklus 12+']
@@ -371,11 +363,6 @@
                 <button key={v} onClick={() => {vibe(); setFilter(v);}} style={{ padding: "6px 14px", borderRadius: 20, border: "1px solid #E5E7EB", fontSize: 12, fontWeight: 700, background: filter === v ? "#111827" : "white", color: filter === v ? "white" : "#6B7280", whiteSpace: "nowrap", transition: "0.2s" }}>{l}</button>
               ))}
             </div>
-            <select value={sort} onChange={e => {vibe(); setSort(e.target.value);}} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #E5E7EB", background: "white", fontSize: 11, fontWeight: 700, color: "#4B5563", marginLeft: 10 }}>
-              <option value="jt">Urut: Jatuh Tempo</option>
-              <option value="tagihan">Urut: Nominal Besar</option>
-              <option value="nama">Urut: Nama A-Z</option>
-            </select>
           </div>
         </div>
 
@@ -402,7 +389,6 @@
                   <div>
                     <div style={{ display:"flex", gap:6, flexWrap: "wrap", alignItems:"center", marginBottom:6 }}>
                       <span style={{ fontSize: 11, fontWeight: 800, color: "#6D28D9", background: "#EDE9FE", padding: "2px 8px", borderRadius: 6 }}>{p.customerId}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, background: "#F3F4F6", color: "#4B5563", padding: "2px 6px", borderRadius: 4 }}>{p.statusKlien || "Aktif"}</span>
                       {cycleBadge && (
                         <span style={{ fontSize: 10, fontWeight: 800, background: cycleBadge.bg, color: cycleBadge.color, padding: "2px 8px", borderRadius: 6, letterSpacing: "0.2px" }}>
                           {cycleBadge.label}
