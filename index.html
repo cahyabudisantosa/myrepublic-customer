@@ -37,7 +37,7 @@
   const { useState, useEffect, useMemo } = React;
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v18"; // Cache baru
+  const STORAGE_KEY = "morabilling-pro-v19"; 
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
@@ -57,23 +57,54 @@
 
   const isLunas = (p) => p.paidCycle ? String(p.paidCycle).includes(getCurrentBillingCycle(p.tanggalTerbit)) : false;
 
-  const getCycleNumber = (p) => {
-    if (!p.joinDate) return null;
+  // FITUR BARU: AUTO-FREEZE CYCLE PADA PELANGGAN MACET
+  const getCycleData = (p) => {
+    if (!p.joinDate) return { num: null, isStuck: false };
     const parts = String(p.joinDate).split("-");
-    if (parts.length < 2) return null;
+    if (parts.length < 2) return { num: null, isStuck: false };
+    
     const startYear = parseInt(parts[0], 10);
     const startMonth = parseInt(parts[1], 10) - 1;
-    const today = getNow();
-    const monthsDiff = (today.getFullYear() - startYear) * 12 + (today.getMonth() - startMonth);
-    return Math.max(1, monthsDiff + 1);
+    let targetYear = getNow().getFullYear();
+    let targetMonth = getNow().getMonth();
+    let isStuck = false;
+
+    if (p.paidCycle) {
+       const paidParts = String(p.paidCycle).split("-");
+       const paidY = parseInt(paidParts[0], 10);
+       const paidM = parseInt(paidParts[1], 10) - 1;
+       const diffMonths = (targetYear - paidY) * 12 + (targetMonth - paidM);
+
+       // Jika nunggak lebih dari 1 bulan, siklus di-freeze di bulan tagihan tsb.
+       if (diffMonths > 1) { 
+          targetYear = paidY;
+          targetMonth = paidM + 1; 
+          isStuck = true;
+       }
+    } else {
+       const currentDiff = (targetYear - startYear) * 12 + (targetMonth - startMonth);
+       // Jika sudah lewat 1 bulan pasang dan belum ada lunas, stuck di Siklus 1
+       if (currentDiff >= 1) { 
+           targetYear = startYear;
+           targetMonth = startMonth;
+           isStuck = true;
+       }
+    }
+
+    const monthsDiff = (targetYear - startYear) * 12 + (targetMonth - startMonth);
+    return { num: Math.max(1, monthsDiff + 1), isStuck };
   };
 
-  const getCycleBadgeStyle = (cycle) => {
-    if (!cycle) return null;
-    if (cycle >= 1 && cycle <= 3) return { bg: "#EFF6FF", color: "#1D4ED8", label: `Siklus ${cycle} (Baru)` };
-    if (cycle >= 4 && cycle <= 6) return { bg: "#E6F4EA", color: "#137333", label: `Siklus ${cycle} (Aman)` };
-    if (cycle >= 7 && cycle <= 12) return { bg: "#FEF3C7", color: "#B45309", label: `Siklus ${cycle} (Setia)` };
-    return { bg: "#F3F4F6", color: "#4B5563", label: `Siklus ${cycle} (VIP)` };
+  const getCycleBadgeStyle = (cycleData) => {
+    if (!cycleData || cycleData.num === null) return null;
+    const { num, isStuck } = cycleData;
+    
+    if (isStuck) return { bg: "#FEF2F2", color: "#DC2626", label: `Macet di Siklus ${num}` }; // Indikator Macet Merah
+
+    if (num >= 1 && num <= 3) return { bg: "#EFF6FF", color: "#1D4ED8", label: `Siklus ${num} (Baru)` };
+    if (num >= 4 && num <= 6) return { bg: "#E6F4EA", color: "#137333", label: `Siklus ${num} (Aman)` };
+    if (num >= 7 && num <= 12) return { bg: "#FEF3C7", color: "#B45309", label: `Siklus ${num} (Setia)` };
+    return { bg: "#F3F4F6", color: "#4B5563", label: `Siklus ${num} (VIP)` };
   };
   
   const getDaysUntilTerbit = (t) => {
@@ -107,6 +138,7 @@
   };
 
   const exportToCSV = (data) => {
+    // Menghapus "Status Klien" dan "Paket" dari CSV Export
     const headers = ["ID Pelanggan", "Nama", "No WA", "Tagihan", "Tgl Terbit", "Bulan Join", "Lunas Bulan Ini", "Catatan"];
     const rows = data.map(p => [p.customerId, p.nama, p.noWa, p.tagihan, p.tanggalTerbit, p.joinDate, isLunas(p) ? "Ya" : "Tidak", `"${(p.catatan || "").replace(/"/g, '""')}"`]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -124,16 +156,24 @@
   const LoginScreen = ({ onLogin }) => {
     const [pin, setPin] = useState("");
     const [error, setError] = useState(false);
+    
+    const handleInput = (val) => {
+      vibe();
+      const num = val.replace(/\D/g, "");
+      setPin(num);
+      if (num.length === 4) {
+        if (num === PIN_RAHASIA) { setTimeout(onLogin, 200); } 
+        else { setError(true); setTimeout(() => { setError(false); setPin(""); }, 800); }
+      }
+    };
+    
     return (
       <div style={{ height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(160deg, #5B21B6, #3B0764)", padding: 20 }}>
         <div style={{ background: "white", padding: 30, borderRadius: 24, width: "100%", maxWidth: 360, textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>[+]</div>
           <h2 style={{ margin: "0 0 5px", color: "#111827", fontWeight: 800 }}>MoraBilling</h2>
           <p style={{ margin: "0 0 20px", color: "#6B7280", fontSize: 13, fontWeight: 500 }}>Masukkan PIN Billing Anda.</p>
-          <input type="password" value={pin} onChange={(e) => {
-              vibe(); const num = e.target.value.replace(/\D/g, ""); setPin(num);
-              if (num.length === 4) { if (num === PIN_RAHASIA) setTimeout(onLogin, 200); else { setError(true); setTimeout(() => { setError(false); setPin(""); }, 800); } }
-            }} placeholder="• • • •" style={{ width: "100%", textAlign: "center", fontSize: 24, letterSpacing: 15, padding: 15, borderRadius: 12, border: error ? "2px solid #DC2626" : "2px solid #E5E7EB", marginBottom: 10, background: error ? "#FEF2F2" : "#F9FAFB", fontWeight: 800, color: error ? "#DC2626" : "#111827" }} maxLength={4} />
+          <input type="password" value={pin} onChange={(e) => handleInput(e.target.value)} placeholder="• • • •" style={{ width: "100%", textAlign: "center", fontSize: 24, letterSpacing: 15, padding: 15, borderRadius: 12, border: error ? "2px solid #DC2626" : "2px solid #E5E7EB", marginBottom: 10, background: error ? "#FEF2F2" : "#F9FAFB", fontWeight: 800, color: error ? "#DC2626" : "#111827" }} maxLength={4} />
           {error && <div style={{color:"#DC2626", fontSize:12, fontWeight:700}}>PIN Salah.</div>}
         </div>
       </div>
@@ -161,7 +201,7 @@
 
       if (errs.length > 0) {
         setErrorFields(errs);
-        setErrorMsg("Mohon lengkapi semua kotak merah.");
+        setErrorMsg("Mohon lengkapi semua kotak yang merah.");
         return;
       }
       onSave({...form});
@@ -262,7 +302,8 @@
       let finalJoinDate = data.startCycle || "";
       if (finalJoinDate && finalJoinDate.length === 7) { finalJoinDate += "-01"; }
       
-      const dataToSave = { ...data, joinDate: finalJoinDate };
+      // Menghapus data paket dan statusKlien karena sudah dihapus dari UI
+      const dataToSave = { ...data, joinDate: finalJoinDate, paket: "Internet", statusKlien: "Aktif" };
       const isEdit = !!data.id;
       const updated = isEdit ? pelanggan.map(p => p.id === dataToSave.id ? dataToSave : p) : [...pelanggan, { ...dataToSave, id: String(Date.now()), paidCycle: null }];
       
@@ -304,7 +345,7 @@
         if (filter === "lunas") return isLunas(p);
         if (filter === "belum") return !isLunas(p);
         
-        const cycle = getCycleNumber(p);
+        const cycle = getCycleData(p).num;
         if (filter === "c1") return cycle >= 1 && cycle <= 3;
         if (filter === "c4") return cycle >= 4 && cycle <= 6;
         if (filter === "c7") return cycle >= 7 && cycle <= 12;
@@ -339,7 +380,7 @@
             <div style={{ display: "flex", gap: 10 }}>
               <div style={{ flex: 1, background: "rgba(16, 185, 129, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#34D399" }}>{stats.lunas}</div>
-                <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4, fontWeight: 600 }}>Lunas</div>
+                <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4, fontWeight: 600 }}>Sudah Bayar</div>
               </div>
               <div style={{ flex: 1, background: "rgba(239, 68, 68, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#FCA5A5" }}>{stats.belum}</div>
@@ -380,8 +421,8 @@
            filtered.map(p => {
             const lunasStatus = isLunas(p);
             const status = getBillingPhase(p.tanggalTerbit);
-            const cycleNum = getCycleNumber(p);
-            const cycleBadge = getCycleBadgeStyle(cycleNum);
+            const cycleData = getCycleData(p);
+            const cycleBadge = getCycleBadgeStyle(cycleData);
 
             return (
               <div key={p.id} className="card-enter" style={{ background: "white", padding: 16, borderRadius: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", borderLeft: `5px solid ${lunasStatus ? "#10B981" : status.color}`, opacity: lunasStatus ? 0.75 : 1 }}>
