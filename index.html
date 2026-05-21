@@ -43,23 +43,15 @@
 <script type="text/babel">
   const { useState, useEffect, useMemo } = React;
 
-  // ===== KONFIGURASI =====
-  const STORAGE_KEY = "myrepublic-pro-v8";
+  // ===== KONFIGURASI UTAMA =====
+  const STORAGE_KEY = "myrepublic-pro-v10";
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywwbJgGy5Xs2gXZ75wTMZOrJiOen7hGQ2eaKwZxNA_ZBLu_tfFKr__q4mLAJ79_AyAEg/exec";
   const PIN_RAHASIA = "2604";
   const HARI_TEMPO = 6;
   
-  const PAKET_LIST = [
-    { nama: "JET", harga: 218000, speed: null, color: "#6D28D9" },
-    { nama: "NEO", harga: 233100, speed: "200 Mbps", color: "#2563EB" },
-    { nama: "VALUE", harga: 277500, speed: "300 Mbps", color: "#059669" },
-    { nama: "NEXUS", harga: 333000, speed: "400 Mbps", color: "#D97706" },
-    { nama: "PRIME", harga: 555000, speed: "500 Mbps", color: "#DC2626" }
-  ];
-
   const STATUS_KLIEN = ["Aktif", "Prospek", "Menunggak", "Isolasi", "Putus"];
 
-  // ===== HELPER FUNCTIONS =====
+  // ===== FUNGSI PENDUKUNG =====
   const vibe = () => { if (navigator.vibrate) navigator.vibrate(40); };
   const getNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
   const formatRupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");
@@ -82,10 +74,10 @@
 
   const isLunas = (p) => p.paidCycle ? String(p.paidCycle).includes(getCurrentBillingCycle(p.tanggalTerbit)) : false;
 
-  // LOGIKA HITUNG SIKLUS (CYCLE NUMBER) DARI BULAN JOIN
   const getCycleNumber = (p) => {
     if (!p.joinDate) return null;
     const parts = String(p.joinDate).split("-");
+    if (parts.length < 2) return null;
     const startYear = parseInt(parts[0], 10);
     const startMonth = parseInt(parts[1], 10) - 1;
     const today = getNow();
@@ -93,13 +85,12 @@
     return Math.max(1, monthsDiff + 1);
   };
 
-  // LOGIKA BADGE STYLE UNTUK SIKLUS 1/2/3
   const getCycleBadgeStyle = (cycle) => {
     if (!cycle) return null;
-    if (cycle === 1) return { bg: "#EFF6FF", color: "#1D4ED8", label: "Siklus 1 (Baru)" };
-    if (cycle === 2) return { bg: "#E6F4EA", color: "#137333", label: "Siklus 2" };
-    if (cycle === 3) return { bg: "#FFF7ED", color: "#C2410C", label: "Siklus 3" };
-    return { bg: "#F3F4F6", color: "#5F6368", label: `Siklus ${cycle}` };
+    if (cycle >= 1 && cycle <= 3) return { bg: "#EFF6FF", color: "#1D4ED8", label: `Siklus ${cycle} (Baru)` };
+    if (cycle >= 4 && cycle <= 6) return { bg: "#E6F4EA", color: "#137333", label: `Siklus ${cycle} (Aman)` };
+    if (cycle >= 7 && cycle <= 12) return { bg: "#FEF3C7", color: "#B45309", label: `Siklus ${cycle} (Setia)` };
+    return { bg: "#F3F4F6", color: "#4B5563", label: `Siklus ${cycle} (VIP)` };
   };
   
   const getDaysUntilTerbit = (t) => {
@@ -133,21 +124,21 @@
   };
 
   const exportToCSV = (data) => {
-    const headers = ["ID Pelanggan", "Nama", "No WA", "Paket", "Tagihan", "Tgl Terbit", "Status CRM", "Lunas Bulan Ini", "Catatan"];
+    const headers = ["ID Pelanggan", "Nama", "No WA", "Tagihan", "Tgl Terbit", "Bulan Join", "Status CRM", "Lunas Bulan Ini", "Catatan"];
     const rows = data.map(p => [
-      p.customerId, p.nama, p.noWa, p.paket, p.tagihan, p.tanggalTerbit, p.statusKlien, isLunas(p) ? "Ya" : "Tidak", `"${(p.catatan || "").replace(/"/g, '""')}"`
+      p.customerId, p.nama, p.noWa, p.tagihan, p.tanggalTerbit, p.joinDate, p.statusKlien, isLunas(p) ? "Ya" : "Tidak", `"${(p.catatan || "").replace(/"/g, '""')}"`
     ]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Data_MoraRepublic_${getNow().getTime()}.csv`);
+    link.setAttribute("download", `Data_MoraBilling_${getNow().getTime()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // ===== UI COMPONENTS =====
+  // ===== KOMPONEN UI =====
   const SkeletonLoader = () => (
     <div style={{ background: "white", padding: 16, borderRadius: 16, marginBottom: 12, display: "flex", gap: 15 }}>
       <div style={{ flex: 1 }}>
@@ -181,7 +172,7 @@
         <div style={{ background: "white", padding: 30, borderRadius: 24, width: "100%", maxWidth: 360, textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>[+]</div>
           <h2 style={{ margin: "0 0 5px", color: "#111827", fontWeight: 800 }}>MoraRepublic</h2>
-          <p style={{ margin: "0 0 20px", color: "#6B7280", fontSize: 13, fontWeight: 500 }}>Masukkan PIN untuk mengakses.</p>
+          <p style={{ margin: "0 0 20px", color: "#6B7280", fontSize: 13, fontWeight: 500 }}>Masukkan PIN Billing Anda.</p>
           <input type="password" value={pin} onChange={(e) => handleInput(e.target.value)} placeholder="• • • •" style={{ width: "100%", textAlign: "center", fontSize: 24, letterSpacing: 15, padding: 15, borderRadius: 12, border: error ? "2px solid #DC2626" : "2px solid #E5E7EB", marginBottom: 10, background: error ? "#FEF2F2" : "#F9FAFB", fontWeight: 800, color: error ? "#DC2626" : "#111827" }} maxLength={4} />
           {error && <div style={{color:"#DC2626", fontSize:12, fontWeight:700}}>PIN yang Anda masukkan salah.</div>}
         </div>
@@ -190,15 +181,14 @@
   };
 
   const AddForm = ({ initialData, onSave, onDelete, onClose }) => {
-    const [form, setForm] = useState(initialData || { customerId: "", nama: "", noWa: "", paket: "", tagihan: "", tanggalTerbit: "", startCycle: "", statusKlien: "Aktif", catatan: "" });
+    // FITUR: Hapus field 'paket' dari state form awal karena fokus billing
+    const [form, setForm] = useState(initialData || { customerId: "", nama: "", noWa: "", tagihan: "", tanggalTerbit: "", startCycle: "", statusKlien: "Aktif", catatan: "" });
     const [tagihanUI, setTagihanUI] = useState(initialData ? formatNumberInput(initialData.tagihan) : "");
     const [errorMsg, setErrorMsg] = useState("");
     const [errorFields, setErrorFields] = useState([]);
     
     const getInputStyle = (field) => ({
-      width: "100%", border: errorFields.includes(field) ? "2px solid #DC2626" : "1.5px solid #E5E7EB", 
-      borderRadius: 10, padding: "11px 14px", fontSize: 14, background: errorFields.includes(field) ? "#FEF2F2" : "#F9FAFB", 
-      marginBottom: 12, fontWeight: 500, color: "#111827", boxSizing: "border-box"
+      width: "100%", border: errorFields.includes(field) ? "2px solid #DC2626" : "1.5px solid #E5E7EB", borderRadius: 10, padding: "11px 14px", fontSize: 14, background: errorFields.includes(field) ? "#FEF2F2" : "#F9FAFB", marginBottom: 12, fontWeight: 500, color: "#111827", boxSizing: "border-box"
     });
     const labelStyle = { fontSize: 12, fontWeight: 700, color: "#6B7280", display: "block", marginBottom: 6 };
 
@@ -208,16 +198,17 @@
       if (!form.customerId.trim()) errs.push("customerId");
       if (!form.nama.trim()) errs.push("nama");
       if (!form.noWa.trim()) errs.push("noWa");
-      if (!form.paket) errs.push("paket");
       if (!form.tagihan) errs.push("tagihan");
       if (!form.tanggalTerbit) errs.push("tanggalTerbit");
+      if (!form.startCycle) errs.push("startCycle");
 
       if (errs.length > 0) {
         setErrorFields(errs);
-        setErrorMsg("Mohon lengkapi kotak yang menyala merah.");
+        setErrorMsg("Mohon lengkapi semua kotak yang menyala merah.");
         return;
       }
-      onSave({...form, startCycle: form.startCycle || ""});
+      // Set default paket string so GAS backend columns won't break
+      onSave({...form, paket: "Internet"});
     }
 
     return (
@@ -236,16 +227,9 @@
           <div><label style={labelStyle}>No. WA *</label><input style={getInputStyle("noWa")} type="tel" placeholder="0812..." value={form.noWa} onChange={e => setForm({...form, noWa: e.target.value.replace(/\D/g, "")})} /></div>
         </div>
 
-        <label style={labelStyle}>Paket Internet *</label>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6, marginBottom: 12 }}>
-          {PAKET_LIST.map(p => (
-            <button key={p.nama} onClick={() => { setForm({...form, paket: p.nama, tagihan: String(p.harga)}); setTagihanUI(formatNumberInput(p.harga)); vibe(); }} style={{ border: form.paket === p.nama ? `2px solid ${p.color}` : (errorFields.includes("paket") ? "2px solid #DC2626" : "1.5px solid #E5E7EB"), borderRadius: 8, padding: "8px 2px", background: form.paket === p.nama ? p.color+"15" : (errorFields.includes("paket") ? "#FEF2F2" : "#F9FAFB"), fontSize: 10, fontWeight: 700, color: form.paket === p.nama ? p.color : "#374151" }}>{p.nama}</button>
-          ))}
-        </div>
-
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div>
-            <label style={labelStyle}>Tagihan (Rp) *</label>
+            <label style={labelStyle}>Nominal Tagihan (Rp) *</label>
             <input style={{...getInputStyle("tagihan"), fontWeight:700}} type="tel" placeholder="277.500" value={tagihanUI} onChange={e => {
               const val = e.target.value;
               setTagihanUI(formatNumberInput(val));
@@ -257,7 +241,7 @@
         
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div><label style={labelStyle}>Tgl Terbit *</label><select style={getInputStyle("tanggalTerbit")} value={form.tanggalTerbit} onChange={e => setForm({...form, tanggalTerbit: e.target.value})}><option value="">Pilih...</option>{Array.from({length: 31}, (_, i) => <option key={i+1} value={i+1}>Tgl {i+1}</option>)}</select></div>
-          <div><label style={labelStyle}>Bulan Join/Pasang *</label><input style={getInputStyle("startCycle")} type="month" value={form.startCycle} onChange={e => setForm({...form, startCycle: e.target.value})} /></div>
+          <div><label style={labelStyle}>Bulan Pasang *</label><input style={getInputStyle("startCycle")} type="month" value={form.startCycle} onChange={e => setForm({...form, startCycle: e.target.value})} /></div>
         </div>
 
         <label style={labelStyle}>Catatan CRM</label>
@@ -302,7 +286,7 @@
     }, [isLoggedIn]);
 
     const fetchData = () => {
-      if (!navigator.onLine) { showMsg("Kamu sedang Offline. Cek koneksi ya.", "error"); setLoading(false); return; }
+      if (!navigator.onLine) { showMsg("Kamu sedang Offline. Menampilkan data lokal.", "error"); setLoading(false); return; }
       setLoading(true);
       fetch(SCRIPT_URL + "?action=getAll").then(res => res.json()).then(json => {
         if (json.success) { setPelanggan(json.data); localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data)); }
@@ -315,14 +299,28 @@
       if(type !== "loading") setTimeout(() => setToast(null), 2500); 
     };
 
+    const handleAPI = (updatedData, successMsg) => {
+      showMsg("Menyimpan ke server...", "loading");
+      fetch(SCRIPT_URL + "?action=save", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(updatedData) })
+        .then(res => res.json())
+        .then(json => {
+          if(json.success) { showMsg(successMsg); localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData)); }
+          else showMsg("Error dari Server: " + json.error, "error");
+        }).catch((e) => showMsg("Gagal menghubungi server.", "error"));
+    };
+
     const handleSave = (data) => {
       if (!navigator.onLine) { showMsg("Gagal menyimpan, Koneksi Offline!", "error"); return; }
+      
+      // PERBAIKAN: Format joinDate dirakit di sini agar masuk ke Sheets dan dibaca oleh getCycleNumber!
+      const finalJoinDate = data.startCycle ? data.startCycle + "-01" : ""; 
+      const dataToSave = { ...data, joinDate: finalJoinDate };
+      
       const isEdit = !!data.id;
-      const updated = isEdit ? pelanggan.map(p => p.id === data.id ? data : p) : [...pelanggan, { ...data, id: String(Date.now()), paidCycle: null }];
+      const updated = isEdit ? pelanggan.map(p => p.id === dataToSave.id ? dataToSave : p) : [...pelanggan, { ...dataToSave, id: String(Date.now()), paidCycle: null }];
+      
       setPelanggan(updated); setShowForm(false); setEditItem(null);
-      showMsg("Menyimpan ke server...", "loading");
-      fetch(SCRIPT_URL + "?action=save", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(updated) })
-        .then(() => { showMsg("Berhasil disimpan!"); fetchData(); }).catch(() => showMsg("Gagal menyimpan data.", "error"));
+      handleAPI(updated, "Berhasil disimpan!");
     };
 
     const toggleLunas = (p) => {
@@ -332,9 +330,7 @@
       const paid = isLunas(p);
       const updated = pelanggan.map(x => x.id === p.id ? { ...x, paidCycle: paid ? null : cycle } : x);
       setPelanggan(updated);
-      showMsg("Memproses...", "loading");
-      fetch(SCRIPT_URL + "?action=save", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(updated) })
-        .then(() => { showMsg(paid ? "Status Lunas Dibatalkan" : "Pembayaran Berhasil!"); fetchData(); }).catch(() => showMsg("Gagal update status.", "error"));
+      handleAPI(updated, paid ? "Status Lunas Dibatalkan" : "Pembayaran Berhasil!");
     };
 
     const handleDelete = (id) => {
@@ -343,9 +339,7 @@
       const updated = pelanggan.filter(x => x.id !== id);
       setPelanggan(updated);
       setShowForm(false);
-      showMsg("Menghapus data...", "loading");
-      fetch(SCRIPT_URL + "?action=save", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(updated) })
-        .then(() => { showMsg("Data Terhapus", "error"); fetchData(); }).catch(() => showMsg("Gagal menghapus.", "error"));
+      handleAPI(updated, "Data Terhapus");
     };
 
     const stats = useMemo(() => {
@@ -360,9 +354,19 @@
     const filtered = useMemo(() => {
       return pelanggan.filter(p => {
         const m = (p.nama||"").toLowerCase().includes(search.toLowerCase()) || (p.customerId||"").toLowerCase().includes(search.toLowerCase());
-        if (filter === "lunas") return m && isLunas(p);
-        if (filter === "belum") return m && !isLunas(p);
-        return m;
+        if (!m) return false;
+
+        if (filter === "lunas") return isLunas(p);
+        if (filter === "belum") return !isLunas(p);
+        
+        // FITUR: Logika filtering shortcut Cycle 1-3, 4-6, 7-12, 12+
+        const cycle = getCycleNumber(p);
+        if (filter === "c1") return cycle >= 1 && cycle <= 3;
+        if (filter === "c4") return cycle >= 4 && cycle <= 6;
+        if (filter === "c7") return cycle >= 7 && cycle <= 12;
+        if (filter === "c12") return cycle > 12;
+        
+        return true;
       }).sort((a, b) => {
         if (sort === "nama") return (a.nama || "").localeCompare(b.nama || "");
         if (sort === "tagihan") return (Number(b.tagihan) || 0) - (Number(a.tagihan) || 0);
@@ -379,7 +383,7 @@
         <div style={{ background: "linear-gradient(160deg, #5B21B6, #4C1D95)", padding: "24px 20px 30px", color: "white", borderBottomLeftRadius: 24, borderBottomRightRadius: 24, boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <div>
-              <div style={{ fontSize: 11, letterSpacing: 2, opacity: 0.7, textTransform: "uppercase", fontWeight: 700 }}>Dashboard</div>
+              <div style={{ fontSize: 11, letterSpacing: 2, opacity: 0.7, textTransform: "uppercase", fontWeight: 700 }}>Dashboard Billing</div>
               <div style={{ fontSize: 24, fontWeight: 800 }}>MoraRepublic</div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
@@ -409,12 +413,15 @@
           <div style={{ position: "relative", marginBottom: 12 }}>
             <input placeholder="Cari nama atau ID..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", padding: "12px 36px 12px 16px", borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 14, fontWeight: 500, background: "white", color: "#111827", boxSizing: "border-box" }} />
             {search && (
-              <button onClick={() => {vibe(); setSearch("");}} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", background: "#F3F4F6", color: "#6B7280", border: "none", fontSize: 12, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <button onClick={() => {vibe(); setSearch("");}} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", background: "#F3F4F6", color: "#6B7280", border: "none", fontSize: 12, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }}>X</button>
             )}
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 5, flex: 1 }}>
-              {[['semua', 'Semua'], ['belum', 'Belum Bayar'], ['lunas', 'Lunas']].map(([v, l]) => (
+              {[
+                ['semua', 'Semua'], ['belum', 'Belum Bayar'], ['lunas', 'Lunas'],
+                ['c1', 'Siklus 1-3'], ['c4', 'Siklus 4-6'], ['c7', 'Siklus 7-12'], ['c12', 'Siklus 12+']
+              ].map(([v, l]) => (
                 <button key={v} onClick={() => {vibe(); setFilter(v);}} style={{ padding: "6px 14px", borderRadius: 20, border: "1px solid #E5E7EB", fontSize: 12, fontWeight: 700, background: filter === v ? "#111827" : "white", color: filter === v ? "white" : "#6B7280", whiteSpace: "nowrap", transition: "0.2s" }}>{l}</button>
               ))}
             </div>
@@ -436,16 +443,14 @@
           ) : 
            filtered.length === 0 ? (
             <div style={{ background: "white", borderRadius: 16, padding: "40px 20px", textAlign: "center", border: "1px dashed #D1D5DB" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>{filter === "belum" && pelanggan.filter(p => !isLunas(p)).length === 0 ? "🎉" : "🔍"}</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{filter === "belum" && pelanggan.filter(p => !isLunas(p)).length === 0 ? "Semua Tagihan Lunas!" : "Data tidak ditemukan"}</div>
-              <div style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>{filter === "belum" && pelanggan.filter(p => !isLunas(p)).length === 0 ? "Kerja bagus! Tidak ada klien yang menunggak bulan ini." : "Coba kata kunci lain atau tambah data baru."}</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>[-]</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 6 }}>Tidak Ada Data</div>
+              <div style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>Bisa jadi semua sudah lunas atau filter tidak cocok.</div>
             </div>
            ) :
            filtered.map(p => {
             const lunasStatus = isLunas(p);
             const status = getBillingPhase(p.tanggalTerbit);
-            
-            // Hitung data siklus
             const cycleNum = getCycleNumber(p);
             const cycleBadge = getCycleBadgeStyle(cycleNum);
 
@@ -456,8 +461,6 @@
                     <div style={{ display:"flex", gap:6, flexWrap: "wrap", alignItems:"center", marginBottom:6 }}>
                       <span style={{ fontSize: 11, fontWeight: 800, color: "#6D28D9", background: "#EDE9FE", padding: "2px 8px", borderRadius: 6 }}>{p.customerId}</span>
                       <span style={{ fontSize: 10, fontWeight: 700, background: "#F3F4F6", color: "#4B5563", padding: "2px 6px", borderRadius: 4 }}>{p.statusKlien || "Aktif"}</span>
-                      
-                      {/* --- RENDERING PENANDA SIKLUS CRM --- */}
                       {cycleBadge && (
                         <span style={{ fontSize: 10, fontWeight: 800, background: cycleBadge.bg, color: cycleBadge.color, padding: "2px 8px", borderRadius: 6, letterSpacing: "0.2px" }}>
                           {cycleBadge.label}
@@ -468,7 +471,6 @@
                     <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2, fontWeight: 500 }}>{p.noWa}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ display: "inline-block", background: "#F3F4F6", padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, marginBottom: 4, color: "#374151" }}>{p.paket}</div>
                     <div style={{ fontSize: 17, fontWeight: 800, color: lunasStatus ? "#10B981" : "#111827" }}>{formatRupiah(p.tagihan)}</div>
                   </div>
                 </div>
@@ -482,7 +484,7 @@
 
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                   <a onClick={()=>vibe()} href={buildWALink(p.noWa, p.nama, p.tanggalTerbit, p.tagihan, p.customerId)} target="_blank" style={{ flex: 1, background: status.urgent && !lunasStatus ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>WA Reminder</a>
-                  <button onClick={() => toggleLunas(p)} style={{ flex: 1, background: lunasStatus ? "#FEF2F2" : "#ECFDF5", color: lunasStatus ? "#DC2626" : "#059669", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>{lunasStatus ? "Batal Lunas" : "✔ Lunas"}</button>
+                  <button onClick={() => toggleLunas(p)} style={{ flex: 1, background: lunasStatus ? "#FEF2F2" : "#ECFDF5", color: lunasStatus ? "#DC2626" : "#059669", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>{lunasStatus ? "Batal Lunas" : "[ Lunas ]"}</button>
                   <button onClick={() => { vibe(); setEditItem({...p, startCycle: p.joinDate ? p.joinDate.substring(0,7) : ""}); setShowForm(true); }} style={{ padding: "0 16px", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, color: "#374151", fontWeight: 700 }}>Edit</button>
                 </div>
               </div>
