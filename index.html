@@ -9,9 +9,9 @@
   <meta name="theme-color" content="#4C1D95" />
   <link rel="apple-touch-icon" href="https://via.placeholder.com/192/4C1D95/FFFFFF?text=MR" />
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -64,7 +64,7 @@
 
   // ===== KONFIGURASI =====
   const STORAGE_KEY = "myrepublic-pro-v2";
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxd00D85-G-QhnpUzyMBt7YO7ItnVNtzjIWb58j9fqtu3GBj2mHnZcmPRhP_BQI3ep1Yg/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhmFXyD0J-GZxQy3SwW25hPYMZRyBAzopUmwIxboB9Prc0uYsjN1PhMyYf17Be-hi79A/exec";
   const HARI_TEMPO = 6;
   const PIN_RAHASIA = "2604"; 
   
@@ -81,27 +81,27 @@
   // ===== HELPER FUNCTIONS =====
   const getNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
   const formatRupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");
-  const cleanPhone = (wa) => String(wa || "").replace(/\D/g, "").replace(/^0/, "62");
+  const cleanPhone = (wa) => {
+    let n = String(wa || "").replace(/\D/g, "");
+    if (n.startsWith("62")) return n;
+    if (n.startsWith("0")) return "62" + n.slice(1);
+    if (n.startsWith("8")) return "62" + n;
+    return n;
+  };
   
+  // Format YYYYMM — tanpa dash agar Google Sheets tidak auto-convert jadi Date
   const getCurrentBillingCycle = (t) => {
     const today = getNow();
-    if (today.getDate() >= Number(t || 1)) return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    if (today.getDate() >= Number(t || 1))
+      return `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}`;
     const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
+    return `${prev.getFullYear()}${String(prev.getMonth() + 1).padStart(2, "0")}`;
   };
 
-  const isLunas = (p) => p.paidCycle === getCurrentBillingCycle(p.tanggalTerbit);
+  const normCycle = (c) => String(c || "").replace(/\D/g, "").substring(0, 6);
+  const isLunas = (p) => normCycle(p.paidCycle) === normCycle(getCurrentBillingCycle(p.tanggalTerbit));
   
-  const getDaysUntilTerbit = (tanggalTerbit) => {
-  const today = getNow();
-  today.setHours(0, 0, 0, 0);
-  const tgl = Number(tanggalTerbit);
-  const target = new Date(today.getFullYear(), today.getMonth(), tgl);
-  if (target < today) target.setMonth(target.getMonth() + 1);
-  return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
-};
-
-const getBillingPhase = (t) => {
+  const getBillingPhase = (t) => {
     const today = getNow();
     today.setHours(0,0,0,0);
     const terbit = new Date(today.getFullYear(), today.getMonth(), Number(t || 1));
@@ -114,6 +114,14 @@ const getBillingPhase = (t) => {
     let targetTerbit = new Date(terbit);
     if(targetTerbit < today) targetTerbit.setMonth(targetTerbit.getMonth() + 1);
     return { phase: "normal", label: `${Math.ceil((targetTerbit - today) / 86400000)} hari lagi`, color: "#059669", bg: "#ECFDF5", urgent: false };
+  };
+
+  const getDaysUntilTerbit = (t) => {
+    const today = getNow();
+    today.setHours(0, 0, 0, 0);
+    let terbit = new Date(today.getFullYear(), today.getMonth(), Number(t || 1));
+    if (terbit <= today) terbit = new Date(today.getFullYear(), today.getMonth() + 1, Number(t || 1));
+    return Math.ceil((terbit - today) / 86400000);
   };
 
   const buildWALink = (noWa, nama, t, tagihan, customerId, mode) => {
@@ -189,7 +197,13 @@ const getBillingPhase = (t) => {
         
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <input style={inputStyle} placeholder="Nama Lengkap" value={form.nama} onChange={e => setForm({...form, nama: e.target.value})} />
-          <input style={inputStyle} type="tel" placeholder="No. WA (0812...)" value={form.noWa} onChange={e => setForm({...form, noWa: e.target.value.replace(/\D/g, "").replace(/^0/, "62")})} />
+          <input style={inputStyle} type="tel" placeholder="No. WA (0812...)" value={form.noWa} onChange={e => {
+              let n = e.target.value.replace(/\D/g, "");
+              if (n.startsWith("62")) n = n;
+              else if (n.startsWith("0")) n = "62" + n.slice(1);
+              else if (n.startsWith("8")) n = "62" + n;
+              setForm({...form, noWa: n});
+            }} />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6, marginBottom: 15 }}>
@@ -250,44 +264,59 @@ const getBillingPhase = (t) => {
 
     useEffect(() => {
       if (!isLoggedIn) return;
-      try { const cached = localStorage.getItem(STORAGE_KEY); if (cached) {
-            const data = JSON.parse(cached);
-            setPelanggan(data.map(p => ({...p,
-              tagihan: String(p.tagihan||"0").replace(/[^0-9]/g,"") || "0",
-              joinDate: String(p.joinDate||"").substring(0,7)
-            })));
-          } } catch (e) {}
+      try { const cached = localStorage.getItem(STORAGE_KEY); if (cached) setPelanggan(JSON.parse(cached)); } catch (e) {}
       fetch(SCRIPT_URL + "?action=getAll").then(res => res.json()).then(json => {
-        if (json.success) {
-          const norm = json.data.map(p => ({...p,
-            tagihan: String(p.tagihan||"0").replace(/[^0-9]/g,"") || "0",
-            joinDate: String(p.joinDate||"").substring(0,7)
-          }));
-          setPelanggan(norm);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(norm));
-        }
+        if (json.success) { setPelanggan(json.data); localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data)); }
         setLoading(false);
       }).catch(() => setLoading(false));
     }, [isLoggedIn]);
 
+
+    const gasGet = (params) => {
+      const qs = new URLSearchParams(params).toString();
+      return fetch(SCRIPT_URL + "?" + qs).then(r => r.json()).catch(e => ({ success: false, error: String(e) }));
+    };
+
     const syncData = (data) => {
       setPelanggan(data);
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
-      fetch(SCRIPT_URL + "?action=save", { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+      gasGet({ action: "saveAll", data: JSON.stringify(data) });
+    };
+
+    const syncField = (id, field, value) => {
+      gasGet({ action: "updateOne", id, field, value: value === null ? "null" : value });
     };
 
     const handleSave = (data) => {
-      const updated = editItem ? pelanggan.map(p => p.id === data.id ? data : p) : [...pelanggan, { ...data, id: Date.now(), paidCycle: null }];
-      syncData(updated); setShowForm(false); setEditItem(null);
+      if (editItem) {
+        const updated = pelanggan.map(p => p.id === data.id ? data : p);
+        setPelanggan(updated);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch(e){}
+        gasGet({ action: "saveAll", data: JSON.stringify(updated) });
+      } else {
+        const newP = { ...data, id: Date.now(), paidCycle: null };
+        const updated = [...pelanggan, newP];
+        setPelanggan(updated);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch(e){}
+        gasGet({ action: "addOne", data: JSON.stringify(newP) });
+      }
+      setShowForm(false); setEditItem(null);
     };
 
     const toggleLunas = (p) => {
-      const cycle = getCurrentBillingCycle(p.tanggalTerbit);
-      syncData(pelanggan.map(x => x.id === p.id ? { ...x, paidCycle: p.paidCycle === cycle ? null : cycle } : x));
+      const newCycle = isLunas(p) ? null : getCurrentBillingCycle(p.tanggalTerbit);
+      const updated = pelanggan.map(x => x.id === p.id ? { ...x, paidCycle: newCycle } : x);
+      setPelanggan(updated);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch(e){}
+      syncField(p.id, "paidCycle", newCycle);
     };
 
     const handleDelete = (id) => {
-      if(window.confirm("Yakin hapus?")) syncData(pelanggan.filter(x => x.id !== id));
+      if(!window.confirm("Yakin hapus?")) return;
+      const updated = pelanggan.filter(x => x.id !== id);
+      setPelanggan(updated);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch(e){}
+      gasGet({ action: "deleteOne", id });
     };
 
     const stats = useMemo(() => {
