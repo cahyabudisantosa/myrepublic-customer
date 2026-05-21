@@ -23,15 +23,18 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse-bg { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     
     .card-enter { animation: fadeIn 0.3s ease forwards; }
     .sheet-enter { animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .skeleton { background: #E5E7EB; border-radius: 8px; animation: pulse-bg 1.5s ease-in-out infinite; }
     
     button { font-family: var(--font); cursor: pointer; }
     input, select, textarea { outline: none; font-family: var(--font); }
     input:focus, select:focus, textarea:focus { outline: 2px solid var(--purple-light); outline-offset: -1px; }
     ::-webkit-scrollbar { display: none; }
+    .sticky-top { position: sticky; top: 0; z-index: 40; background: #F3F4F6; padding: 15px 16px 5px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -40,8 +43,8 @@
 <script type="text/babel">
   const { useState, useEffect, useMemo } = React;
 
-  // ===== KONFIGURASI =====
-  const STORAGE_KEY = "myrepublic-pro-v6";
+  // ===== KONFIGURASI UTAMA =====
+  const STORAGE_KEY = "myrepublic-pro-v7";
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZHr6XA1zv3jHF8kLtzRveKx64zyxUPx_GQKX08abqkXZRN2iW_PW6I3KYEoP9trRpXA/exec";
   const PIN_RAHASIA = "2604";
   const HARI_TEMPO = 6;
@@ -56,9 +59,11 @@
 
   const STATUS_KLIEN = ["Aktif", "Prospek", "Menunggak", "Isolasi", "Putus"];
 
-  // ===== HELPER FUNCTIONS =====
+  // ===== FUNGSI PENDUKUNG =====
+  const vibe = () => { if (navigator.vibrate) navigator.vibrate(40); };
   const getNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
   const formatRupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");
+  const formatNumberInput = (n) => n ? Number(n.toString().replace(/\D/g, "")).toLocaleString('id-ID') : "";
   
   const cleanPhone = (wa) => {
     let num = String(wa || "").replace(/\D/g, "");
@@ -75,10 +80,7 @@
     return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
   };
 
-  const isLunas = (p) => {
-    if (!p.paidCycle) return false;
-    return String(p.paidCycle).includes(getCurrentBillingCycle(p.tanggalTerbit));
-  };
+  const isLunas = (p) => p.paidCycle ? String(p.paidCycle).includes(getCurrentBillingCycle(p.tanggalTerbit)) : false;
   
   const getDaysUntilTerbit = (t) => {
     const today = getNow();
@@ -125,18 +127,43 @@
     document.body.removeChild(link);
   };
 
-  // ===== UI COMPONENTS =====
+  // ===== KOMPONEN UI =====
+  const SkeletonLoader = () => (
+    <div style={{ background: "white", padding: 16, borderRadius: 16, marginBottom: 12, display: "flex", gap: 15 }}>
+      <div style={{ flex: 1 }}>
+        <div className="skeleton" style={{ width: "40%", height: 14, marginBottom: 10 }}></div>
+        <div className="skeleton" style={{ width: "80%", height: 20, marginBottom: 10 }}></div>
+        <div className="skeleton" style={{ width: "60%", height: 12 }}></div>
+      </div>
+      <div style={{ width: 80 }}>
+        <div className="skeleton" style={{ width: "100%", height: 18, marginBottom: 6 }}></div>
+        <div className="skeleton" style={{ width: "100%", height: 24 }}></div>
+      </div>
+    </div>
+  );
+
   const LoginScreen = ({ onLogin }) => {
     const [pin, setPin] = useState("");
     const [error, setError] = useState(false);
+    
+    const handleInput = (val) => {
+      vibe();
+      const num = val.replace(/\D/g, "");
+      setPin(num);
+      if (num.length === 4) {
+        if (num === PIN_RAHASIA) { setTimeout(onLogin, 200); } 
+        else { setError(true); setTimeout(() => { setError(false); setPin(""); }, 800); }
+      }
+    };
+    
     return (
       <div style={{ height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(160deg, #5B21B6, #3B0764)", padding: 20 }}>
         <div style={{ background: "white", padding: 30, borderRadius: 24, width: "100%", maxWidth: 360, textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>[+]</div>
           <h2 style={{ margin: "0 0 5px", color: "#111827", fontWeight: 800 }}>MoraRepublic</h2>
-          <p style={{ margin: "0 0 20px", color: "#6B7280", fontSize: 13, fontWeight: 500 }}>Akses sistem manajemen klien.</p>
-          <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="• • • •" style={{ width: "100%", textAlign: "center", fontSize: 24, letterSpacing: 10, padding: 15, borderRadius: 12, border: error ? "2px solid #DC2626" : "2px solid #E5E7EB", marginBottom: 20, background: "#F9FAFB", fontWeight: 800 }} maxLength={6} />
-          <button onClick={() => { if(pin === PIN_RAHASIA) onLogin(); else { setError(true); setTimeout(()=>setError(false),1000); setPin(""); } }} style={{ width: "100%", background: "#6D28D9", color: "white", padding: 15, borderRadius: 12, border: "none", fontSize: 15, fontWeight: 700 }}>Masuk</button>
+          <p style={{ margin: "0 0 20px", color: "#6B7280", fontSize: 13, fontWeight: 500 }}>Masukkan PIN untuk mengakses.</p>
+          <input type="password" value={pin} onChange={(e) => handleInput(e.target.value)} placeholder="• • • •" style={{ width: "100%", textAlign: "center", fontSize: 24, letterSpacing: 15, padding: 15, borderRadius: 12, border: error ? "2px solid #DC2626" : "2px solid #E5E7EB", marginBottom: 10, background: error ? "#FEF2F2" : "#F9FAFB", fontWeight: 800, color: error ? "#DC2626" : "#111827" }} maxLength={4} />
+          {error && <div style={{color:"#DC2626", fontSize:12, fontWeight:700}}>PIN yang Anda masukkan salah.</div>}
         </div>
       </div>
     );
@@ -144,6 +171,7 @@
 
   const AddForm = ({ initialData, onSave, onDelete, onClose }) => {
     const [form, setForm] = useState(initialData || { customerId: "", nama: "", noWa: "", paket: "", tagihan: "", tanggalTerbit: "", startCycle: "", statusKlien: "Aktif", catatan: "" });
+    const [tagihanUI, setTagihanUI] = useState(initialData ? formatNumberInput(initialData.tagihan) : "");
     const [errorMsg, setErrorMsg] = useState("");
     const [errorFields, setErrorFields] = useState([]);
     
@@ -152,10 +180,10 @@
       borderRadius: 10, padding: "11px 14px", fontSize: 14, background: errorFields.includes(field) ? "#FEF2F2" : "#F9FAFB", 
       marginBottom: 12, fontWeight: 500, color: "#111827", boxSizing: "border-box"
     });
-    
     const labelStyle = { fontSize: 12, fontWeight: 700, color: "#6B7280", display: "block", marginBottom: 6 };
 
     function handleSave() {
+      vibe();
       let errs = [];
       if (!form.customerId.trim()) errs.push("customerId");
       if (!form.nama.trim()) errs.push("nama");
@@ -169,7 +197,6 @@
         setErrorMsg("Mohon lengkapi kotak yang menyala merah.");
         return;
       }
-      setErrorFields([]);
       onSave({...form, startCycle: form.startCycle || ""});
     }
 
@@ -178,7 +205,7 @@
         <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 16px" }}><div style={{ width: 40, height: 5, background: "#E5E7EB", borderRadius: 3 }}></div></div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{initialData ? "Edit Pelanggan" : "Pelanggan Baru"}</h3>
-          <button onClick={onClose} style={{ background: "#F3F4F6", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 14, fontWeight: 700, color: "#6B7280" }}>X</button>
+          <button onClick={()=>{vibe(); onClose();}} style={{ background: "#F3F4F6", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 14, fontWeight: 700, color: "#6B7280" }}>X</button>
         </div>
 
         <label style={labelStyle}>ID Pelanggan *</label>
@@ -192,12 +219,19 @@
         <label style={labelStyle}>Paket Internet *</label>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 6, marginBottom: 12 }}>
           {PAKET_LIST.map(p => (
-            <button key={p.nama} onClick={() => setForm({...form, paket: p.nama, tagihan: String(p.harga)})} style={{ border: form.paket === p.nama ? `2px solid ${p.color}` : (errorFields.includes("paket") ? "2px solid #DC2626" : "1.5px solid #E5E7EB"), borderRadius: 8, padding: "8px 2px", background: form.paket === p.nama ? p.color+"15" : (errorFields.includes("paket") ? "#FEF2F2" : "#F9FAFB"), fontSize: 10, fontWeight: 700, color: form.paket === p.nama ? p.color : "#374151" }}>{p.nama}</button>
+            <button key={p.nama} onClick={() => { setForm({...form, paket: p.nama, tagihan: String(p.harga)}); setTagihanUI(formatNumberInput(p.harga)); vibe(); }} style={{ border: form.paket === p.nama ? `2px solid ${p.color}` : (errorFields.includes("paket") ? "2px solid #DC2626" : "1.5px solid #E5E7EB"), borderRadius: 8, padding: "8px 2px", background: form.paket === p.nama ? p.color+"15" : (errorFields.includes("paket") ? "#FEF2F2" : "#F9FAFB"), fontSize: 10, fontWeight: 700, color: form.paket === p.nama ? p.color : "#374151" }}>{p.nama}</button>
           ))}
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div><label style={labelStyle}>Tagihan (Rp) *</label><input style={{...getInputStyle("tagihan"), fontWeight:700}} type="tel" placeholder="277500" value={form.tagihan} onChange={e => setForm({...form, tagihan: e.target.value.replace(/\D/g, "")})} /></div>
+          <div>
+            <label style={labelStyle}>Tagihan (Rp) *</label>
+            <input style={{...getInputStyle("tagihan"), fontWeight:700}} type="tel" placeholder="277.500" value={tagihanUI} onChange={e => {
+              const val = e.target.value;
+              setTagihanUI(formatNumberInput(val));
+              setForm({...form, tagihan: val.replace(/\D/g, "")});
+            }} />
+          </div>
           <div><label style={labelStyle}>Status Klien</label><select style={getInputStyle("statusKlien")} value={form.statusKlien} onChange={e => setForm({...form, statusKlien: e.target.value})}>{STATUS_KLIEN.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
         </div>
         
@@ -213,7 +247,7 @@
         
         <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
           {initialData && (
-            <button onClick={() => onDelete(initialData.id)} style={{ padding: "14px 20px", background: "#FEF2F2", color: "#DC2626", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700 }}>Hapus</button>
+            <button onClick={() => { vibe(); onDelete(initialData.id); }} style={{ padding: "14px 20px", background: "#FEF2F2", color: "#DC2626", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700 }}>Hapus</button>
           )}
           <button onClick={handleSave} style={{ flex: 1, background: "linear-gradient(135deg, #7C3AED, #4C1D95)", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 700 }}>Simpan Data</button>
         </div>
@@ -226,10 +260,20 @@
     const [pelanggan, setPelanggan] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("semua");
+    const [sort, setSort] = useState("jt");
     const [search, setSearch] = useState("");
     const [showForm, setShowForm] = useState(false);
     const [editItem, setEditItem] = useState(null);
     const [toast, setToast] = useState(null);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    useEffect(() => {
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
+    }, []);
 
     useEffect(() => {
       if (!isLoggedIn) return;
@@ -238,11 +282,12 @@
     }, [isLoggedIn]);
 
     const fetchData = () => {
+      if (!navigator.onLine) { showMsg("Kamu sedang Offline. Cek koneksi ya.", "error"); setLoading(false); return; }
       setLoading(true);
       fetch(SCRIPT_URL + "?action=getAll").then(res => res.json()).then(json => {
         if (json.success) { setPelanggan(json.data); localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data)); }
         setLoading(false);
-      }).catch(() => setLoading(false));
+      }).catch(() => { showMsg("Gagal sinkron. Koneksi bermasalah.", "error"); setLoading(false); });
     };
 
     const showMsg = (msg, type="success") => { 
@@ -251,32 +296,36 @@
     };
 
     const handleSave = (data) => {
+      if (!navigator.onLine) { showMsg("Gagal menyimpan, Koneksi Offline!", "error"); return; }
       const isEdit = !!data.id;
       const updated = isEdit ? pelanggan.map(p => p.id === data.id ? data : p) : [...pelanggan, { ...data, id: String(Date.now()), paidCycle: null }];
       setPelanggan(updated); setShowForm(false); setEditItem(null);
       showMsg("Menyimpan ke server...", "loading");
       fetch(SCRIPT_URL + "?action=save", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(updated) })
-        .then(() => { showMsg("Berhasil disimpan!"); fetchData(); });
+        .then(() => { showMsg("Berhasil disimpan!"); fetchData(); }).catch(() => showMsg("Gagal menyimpan data.", "error"));
     };
 
     const toggleLunas = (p) => {
+      vibe();
+      if (!navigator.onLine) { showMsg("Gagal merubah status, Koneksi Offline!", "error"); return; }
       const cycle = getCurrentBillingCycle(p.tanggalTerbit);
       const paid = isLunas(p);
       const updated = pelanggan.map(x => x.id === p.id ? { ...x, paidCycle: paid ? null : cycle } : x);
       setPelanggan(updated);
       showMsg("Memproses...", "loading");
       fetch(SCRIPT_URL + "?action=save", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(updated) })
-        .then(() => { showMsg(paid ? "Status Lunas Dibatalkan" : "Pembayaran Berhasil!"); fetchData(); });
+        .then(() => { showMsg(paid ? "Status Lunas Dibatalkan" : "Pembayaran Berhasil!"); fetchData(); }).catch(() => showMsg("Gagal update status.", "error"));
     };
 
     const handleDelete = (id) => {
+      if (!navigator.onLine) { showMsg("Gagal hapus, Koneksi Offline!", "error"); return; }
       if(!window.confirm("Yakin ingin menghapus data ini secara permanen?")) return;
       const updated = pelanggan.filter(x => x.id !== id);
       setPelanggan(updated);
       setShowForm(false);
       showMsg("Menghapus data...", "loading");
       fetch(SCRIPT_URL + "?action=save", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(updated) })
-        .then(() => { showMsg("Data Terhapus", "error"); fetchData(); });
+        .then(() => { showMsg("Data Terhapus", "error"); fetchData(); }).catch(() => showMsg("Gagal menghapus.", "error"));
     };
 
     const stats = useMemo(() => {
@@ -295,11 +344,14 @@
         if (filter === "belum") return m && !isLunas(p);
         return m;
       }).sort((a, b) => {
+        if (sort === "nama") return (a.nama || "").localeCompare(b.nama || "");
+        if (sort === "tagihan") return (Number(b.tagihan) || 0) - (Number(a.tagihan) || 0);
+        // Default Sort (Jatuh Tempo Terdekat)
         const aU = !isLunas(a) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(a.tanggalTerbit).phase);
         const bU = !isLunas(b) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(b.tanggalTerbit).phase);
         return aU !== bU ? (aU ? -1 : 1) : getDaysUntilTerbit(a.tanggalTerbit) - getDaysUntilTerbit(b.tanggalTerbit);
       });
-    }, [pelanggan, filter, search]);
+    }, [pelanggan, filter, search, sort]);
 
     if (!isLoggedIn) return <LoginScreen onLogin={() => setIsLoggedIn(true)} />;
 
@@ -311,7 +363,10 @@
               <div style={{ fontSize: 11, letterSpacing: 2, opacity: 0.7, textTransform: "uppercase", fontWeight: 700 }}>Dashboard</div>
               <div style={{ fontSize: 24, fontWeight: 800 }}>MoraRepublic</div>
             </div>
-            <button onClick={() => exportToCSV(pelanggan)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 12, padding: "8px 12px", color: "white", fontSize: 12, fontWeight: 700 }}>Export CSV</button>
+            <div style={{ display: "flex", gap: 10 }}>
+              {!isOnline && <div style={{ background: "#DC2626", color: "white", padding: "6px 10px", borderRadius: 10, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center" }}>Offline</div>}
+              <button onClick={() => {vibe(); exportToCSV(pelanggan);}} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 12, padding: "8px 12px", color: "white", fontSize: 12, fontWeight: 700 }}>Export CSV</button>
+            </div>
           </div>
 
           <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 16, padding: 15 }}>
@@ -330,24 +385,38 @@
           </div>
         </div>
 
-        <div style={{ padding: "20px 16px 10px" }}>
-          <div style={{ position: "relative", marginBottom: 15 }}>
-            <input placeholder="Cari nama atau ID..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", padding: "14px 40px 14px 16px", borderRadius: 12, border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", fontSize: 14, fontWeight: 500, background: "white", color: "#111827", boxSizing: "border-box" }} />
+        {/* --- STICKY TOOLBAR --- */}
+        <div className="sticky-top">
+          <div style={{ position: "relative", marginBottom: 12 }}>
+            <input placeholder="Cari nama atau ID..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", padding: "12px 36px 12px 16px", borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 14, fontWeight: 500, background: "white", color: "#111827", boxSizing: "border-box" }} />
             {search && (
-              <button onClick={() => setSearch("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", background: "#F3F4F6", color: "#6B7280", border: "none", fontSize: 12, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <button onClick={() => {vibe(); setSearch("");}} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", background: "#F3F4F6", color: "#6B7280", border: "none", fontSize: 12, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
             )}
           </div>
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 5 }}>
-            {[['semua', 'Semua'], ['belum', 'Belum Bayar'], ['lunas', 'Lunas']].map(([v, l]) => (
-              <button key={v} onClick={() => setFilter(v)} style={{ padding: "8px 16px", borderRadius: 20, border: "none", fontSize: 12, fontWeight: 700, background: filter === v ? "#111827" : "white", color: filter === v ? "white" : "#6B7280", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", whiteSpace: "nowrap", transition: "0.2s" }}>{l}</button>
-            ))}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 5, flex: 1 }}>
+              {[['semua', 'Semua'], ['belum', 'Belum Bayar'], ['lunas', 'Lunas']].map(([v, l]) => (
+                <button key={v} onClick={() => {vibe(); setFilter(v);}} style={{ padding: "6px 14px", borderRadius: 20, border: "1px solid #E5E7EB", fontSize: 12, fontWeight: 700, background: filter === v ? "#111827" : "white", color: filter === v ? "white" : "#6B7280", whiteSpace: "nowrap", transition: "0.2s" }}>{l}</button>
+              ))}
+            </div>
+            <select value={sort} onChange={e => {vibe(); setSort(e.target.value);}} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #E5E7EB", background: "white", fontSize: 11, fontWeight: 700, color: "#4B5563", marginLeft: 10 }}>
+              <option value="jt">Urut: Jatuh Tempo</option>
+              <option value="tagihan">Urut: Nominal Besar</option>
+              <option value="nama">Urut: Nama A-Z</option>
+            </select>
           </div>
         </div>
 
         <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 12 }}>
-          {loading && pelanggan.length === 0 ? <div style={{textAlign:"center", padding: 20, fontWeight:700, color:"#6D28D9"}}>Memuat Data...</div> : 
+          {loading && pelanggan.length === 0 ? (
+            <React.Fragment>
+              <SkeletonLoader />
+              <SkeletonLoader />
+              <SkeletonLoader />
+            </React.Fragment>
+          ) : 
            filtered.length === 0 ? (
-            <div style={{ background: "white", borderRadius: 16, padding: "40px 20px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ background: "white", borderRadius: 16, padding: "40px 20px", textAlign: "center", border: "1px dashed #D1D5DB" }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>{filter === "belum" && pelanggan.filter(p => !isLunas(p)).length === 0 ? "🎉" : "🔍"}</div>
               <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{filter === "belum" && pelanggan.filter(p => !isLunas(p)).length === 0 ? "Semua Tagihan Lunas!" : "Data tidak ditemukan"}</div>
               <div style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>{filter === "belum" && pelanggan.filter(p => !isLunas(p)).length === 0 ? "Kerja bagus! Tidak ada klien yang menunggak bulan ini." : "Coba kata kunci lain atau tambah data baru."}</div>
@@ -357,7 +426,7 @@
             const lunasStatus = isLunas(p);
             const status = getBillingPhase(p.tanggalTerbit);
             return (
-              <div key={p.id} className="card-enter" style={{ background: "white", padding: 16, borderRadius: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", borderLeft: `5px solid ${lunasStatus ? "#10B981" : status.color}`, opacity: lunasStatus ? 0.7 : 1 }}>
+              <div key={p.id} className="card-enter" style={{ background: "white", padding: 16, borderRadius: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", borderLeft: `5px solid ${lunasStatus ? "#10B981" : status.color}`, opacity: lunasStatus ? 0.75 : 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <div>
                     <div style={{ display:"flex", gap:6, alignItems:"center", marginBottom:4 }}>
@@ -380,18 +449,17 @@
                   {!lunasStatus && <span style={{ background: status.bg, color: status.color, padding: "4px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800 }}>{status.label}</span>}
                 </div>
 
-                {/* --- PERUBAHAN UI TOMBOL --- */}
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                  <a href={buildWALink(p.noWa, p.nama, p.tanggalTerbit, p.tagihan, p.customerId)} target="_blank" style={{ flex: 1, background: status.urgent && !lunasStatus ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>WhatsApp</a>
+                  <a onClick={()=>vibe()} href={buildWALink(p.noWa, p.nama, p.tanggalTerbit, p.tagihan, p.customerId)} target="_blank" style={{ flex: 1, background: status.urgent && !lunasStatus ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>WA Reminder</a>
                   <button onClick={() => toggleLunas(p)} style={{ flex: 1, background: lunasStatus ? "#FEF2F2" : "#ECFDF5", color: lunasStatus ? "#DC2626" : "#059669", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>{lunasStatus ? "Batal Lunas" : "✔ Lunas"}</button>
-                  <button onClick={() => { setEditItem({...p, startCycle: p.joinDate ? p.joinDate.substring(0,7) : ""}); setShowForm(true); }} style={{ padding: "0 16px", background: "#F3F4F6", border: "none", borderRadius: 10, fontSize: 13, color: "#374151", fontWeight: 700 }}>Edit</button>
+                  <button onClick={() => { vibe(); setEditItem({...p, startCycle: p.joinDate ? p.joinDate.substring(0,7) : ""}); setShowForm(true); }} style={{ padding: "0 16px", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, color: "#374151", fontWeight: 700 }}>Edit</button>
                 </div>
               </div>
             );
           })}
         </div>
 
-        <button onClick={() => { setEditItem(null); setShowForm(true); }} style={{ position: "fixed", bottom: 24, right: 20, width: 60, height: 60, borderRadius: 30, background: "linear-gradient(135deg, #7C3AED, #4C1D95)", color: "white", border: "none", fontSize: 32, fontWeight: 300, boxShadow: "0 4px 15px rgba(76,29,149,0.4)" }}>+</button>
+        <button onClick={() => { vibe(); setEditItem(null); setShowForm(true); }} style={{ position: "fixed", bottom: 24, right: 20, width: 60, height: 60, borderRadius: 30, background: "linear-gradient(135deg, #7C3AED, #4C1D95)", color: "white", border: "none", fontSize: 32, fontWeight: 300, boxShadow: "0 4px 15px rgba(76,29,149,0.4)", zIndex: 50 }}>+</button>
 
         {showForm && (
           <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "flex-end" }}>
@@ -401,9 +469,8 @@
           </div>
         )}
         
-        {/* --- TOAST NOTIFICATION DENGAN SPINNER --- */}
         {toast && (
-          <div style={{ position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#DC2626" : toast.type === "loading" ? "#4C1D95" : "#111827", color: "white", padding: "12px 24px", borderRadius: 12, fontSize: 13, fontWeight: 700, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", zIndex: 200, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#DC2626" : toast.type === "loading" ? "#4C1D95" : "#111827", color: "white", padding: "12px 24px", borderRadius: 12, fontSize: 13, fontWeight: 700, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", zIndex: 200, display: "flex", alignItems: "center", gap: 10 }}>
             {toast.type === "loading" && <span className="spinner"></span>}
             {toast.msg}
           </div>
