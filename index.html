@@ -37,7 +37,7 @@
   const { useState, useEffect, useMemo } = React;
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v25"; 
+  const STORAGE_KEY = "morabilling-pro-v26"; 
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
@@ -67,8 +67,9 @@
     
     const today = getNow();
     let usia = (today.getFullYear() - startY) * 12 + (today.getMonth() - startM);
+    
+    // Perbaikan Bug: Jika hari ini sudah lewat tgl terbit, tambah 1 bulan tagihan
     if (today.getDate() >= tglTerbit) { usia += 1; }
-    usia = Math.max(1, usia); 
     
     let bayar = parseInt(p.paidCycle, 10);
     if (isNaN(bayar)) bayar = 0;
@@ -89,7 +90,8 @@
     const jatuhTempoBulanIni = new Date(today.getFullYear(), today.getMonth(), validTglTerbit + HARI_TEMPO);
     
     if (crm.nunggak > 0) {
-       if(crm.nunggak === 1 && today < jatuhTempoBulanIni && today >= terbitBulanIni) {
+       // Cek apakah dia baru masuk bulan ke-1 tagihan (belum telat H+6)
+       if(crm.nunggak === 1 && today <= jatuhTempoBulanIni && today >= terbitBulanIni) {
            return { phase: "aktif", label: `JT ${Math.ceil((jatuhTempoBulanIni - today) / 86400000)} hari lagi`, color: "#D97706", bg: "#FFFBEB", urgent: false };
        }
        return { phase: "lewat", label: `Tagihan ${crm.nunggak} Bulan!`, color: "#DC2626", bg: "#FEF2F2", urgent: true };
@@ -107,7 +109,14 @@
     const phone = cleanPhone(p.noWa);
     const multiplier = crm.nunggak > 0 ? crm.nunggak : 1;
     const nominal = p.tagihan * multiplier;
-    const msgText = `Halo *Kak ${p.nama}* 👋\n\nMengingatkan tagihan WiFi MyRepublic ID *${p.customerId}* Anda.\n\nTotal Tagihan : *${formatRupiah(nominal)}* (${crm.nunggak > 0 ? crm.nunggak + ' Bulan' : 'Bulan Ini'})\n\nMohon segera melakukan pembayaran agar layanan tetap aktif ya Kak 😊\nTerima kasih! 🙏`;
+    
+    // Perbaikan kalimat WA agar tidak aneh saat nunggak 0 atau 1
+    let statusText = "Bulan Ini";
+    if (crm.nunggak > 1) {
+        statusText = `${crm.nunggak} Bulan`;
+    }
+    
+    const msgText = `Halo *Kak ${p.nama}* 👋\n\nMengingatkan tagihan WiFi MyRepublic ID *${p.customerId}* Anda.\n\nTotal Tagihan : *${formatRupiah(nominal)}* (${statusText})\n\nMohon segera melakukan pembayaran agar layanan tetap aktif ya Kak 😊\nTerima kasih! 🙏`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msgText)}`;
   };
 
@@ -119,7 +128,6 @@
     });
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     
-    // Perbaikan Mikro: Format nama file CSV
     const date = getNow();
     const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
     const fileName = `MoraBilling_${date.getDate()}_${months[date.getMonth()]}_${date.getFullYear()}.csv`;
@@ -175,7 +183,6 @@
       const tglPsg = new Date(form.joinDate);
       const terbit = tglPsg.getDate();
       
-      // Perbaikan Mikro: Auto Title Case untuk Nama Pelanggan
       onSave({...form, nama: toTitleCase(form.nama.trim()), tanggalTerbit: terbit});
     }
 
@@ -277,11 +284,7 @@
 
     const handleSave = (data) => {
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
-      
-      let finalJoinDate = data.startCycle || "";
-      if (finalJoinDate && finalJoinDate.length === 7) { finalJoinDate += "-01"; }
-      
-      const dataToSave = { ...data, joinDate: finalJoinDate, statusKlien: data.statusKlien || "Aktif", paidCycle: data.paidCycle || 0 };
+      const dataToSave = { ...data, statusKlien: data.statusKlien || "Aktif", paidCycle: data.paidCycle || 0 };
       const isEdit = !!data.id;
       const updated = isEdit ? pelanggan.map(p => p.id === dataToSave.id ? dataToSave : p) : [...pelanggan, { ...dataToSave, id: String(Date.now()) }];
       
@@ -439,7 +442,6 @@
           </div>
         </div>
 
-        {/* Perbaikan Mikro: Teks panduan indikator sortir */}
         <div style={{ padding: "0 16px" }}>
             <div style={{ fontSize: 10, color: "#9CA3AF", textAlign: "center", marginBottom: 8 }}>Diurutkan berdasarkan prioritas penagihan</div>
         </div>
@@ -492,6 +494,13 @@
                   <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 500 }}>Terbit Tgl <b style={{color:"#111827"}}>{crm.tglTerbit}</b> setiap bulan</div>
                   {!isPutus && crm.nunggak === 0 && <span style={{ background: status.bg, color: status.color, padding: "4px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800 }}>{status.label}</span>}
                 </div>
+                
+                {/* Perbaikan Mikro: Instruksi Jatuh Tempo */}
+                {!isPutus && crm.nunggak > 0 && (
+                  <div style={{ fontSize: 10, color: "#DC2626", fontWeight: 700, marginTop: 6, textAlign: "right" }}>
+                    * Maksimal Bayar 6 Hari Setelah Terbit
+                  </div>
+                )}
 
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                   {!isPutus && (
@@ -499,7 +508,6 @@
                       <a onClick={()=>vibe()} href={buildWALink(p, crm)} target="_blank" style={{ flex: 1, background: (status.urgent || crm.nunggak > 0) ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>WA Reminder</a>
                       
                       <div style={{ display: "flex", flex: 1, gap: 4 }}>
-                        {/* Perbaikan Mikro Kosmetik pada Tombol Minus */}
                         <button onClick={() => batalBayar(p)} style={{ flex: 0.3, background: "#FEF2F2", color: "#DC2626", border: "1px solid #FCA5A5", borderRadius: 10, fontSize: 16, fontWeight: 800 }}>-</button>
                         
                         <button 
