@@ -15,51 +15,19 @@
     :root { --purple: #6D28D9; --font: 'Plus Jakarta Sans', sans-serif; }
     html, body { height: 100%; background: #F3F4F6; font-family: var(--font); color: #111827; }
     #root { height: 100%; }
-    
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes pulse-bg { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* CORE RESPONSIVE LAYOUT */
-    .app-wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding-bottom: 100px; }
-    .top-banner { background: linear-gradient(160deg, #5B21B6, #4C1D95); padding: 24px 20px 30px; color: white; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-    .sticky-controls { position: sticky; top: 0; z-index: 40; background: #F3F4F6; padding: 15px 16px 5px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; margin-bottom: 16px; display: grid; gap: 10px; }
-    .filter-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; width: 100%; }
-    .dropdown-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-bottom: 4px; }
-    .customer-grid { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 0 16px; align-items: stretch; }
-    .load-more-btn { margin: 20px 16px; padding: 14px; background: white; border: 1px dashed #D1D5DB; border-radius: 16px; color: #4B5563; font-weight: 700; text-align: center; cursor: pointer; display: block; width: calc(100% - 32px); box-sizing: border-box; }
-    
-    /* MODAL RESPONSIVE */
-    .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; }
-    .modal-content { background: white; width: 100%; border-top-left-radius: 24px; border-top-right-radius: 24px; max-height: 90vh; overflow-y: auto; padding: 20px; animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
-
-    @media (min-width: 640px) {
-      .top-banner { border-radius: 24px; margin-top: 20px; padding: 30px; }
-      .stats-row { grid-template-columns: repeat(2, 220px); justify-content: flex-start; }
-      .sticky-controls { grid-template-columns: 2fr 3fr; padding: 20px; border-radius: 16px; margin: 20px 16px; align-items: center; }
-      .dropdown-row { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; max-width: 400px; }
-      .customer-grid { grid-template-columns: repeat(2, 1fr); padding: 0 20px; }
-      .load-more-btn { width: calc(100% - 40px); margin: 20px auto; max-width: 400px; }
-      .modal-overlay { align-items: center; padding: 20px; }
-      .modal-content { max-width: 500px; border-radius: 24px; animation: fadeIn 0.3s ease forwards; }
-    }
-    
-    @media (min-width: 1024px) {
-      .customer-grid { grid-template-columns: repeat(3, 1fr); }
-      .sticky-controls { grid-template-columns: 2fr 3fr 2fr; }
-      .dropdown-row { grid-column: auto; max-width: none; }
-    }
-
+    @keyframes pulse-bg { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     .card-enter { animation: fadeIn 0.3s ease forwards; }
+    .sheet-enter { animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
     .skeleton { background: #E5E7EB; border-radius: 8px; animation: pulse-bg 1.5s ease-in-out infinite; }
-    button { font-family: var(--font); cursor: pointer; transition: transform 0.1s; }
-    button:active { transform: scale(0.97); }
+    button { font-family: var(--font); cursor: pointer; }
     input, select, textarea { outline: none; font-family: var(--font); }
     input:focus, select:focus, textarea:focus { outline: 2px solid #7C3AED; outline-offset: -1px; }
     ::-webkit-scrollbar { display: none; }
+    .sticky-top { position: sticky; top: 0; z-index: 40; background: #F3F4F6; padding: 15px 16px 5px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -68,13 +36,12 @@
 <script type="text/babel">
   const { useState, useEffect, useMemo } = React;
 
-  // SCRIPT URL BARU YANG ANDA GENERATE
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3MUWyjUNmgLpSlqueylCaZqmyZk6_mostTZBzn5XEogVVR11bNpTRiZkb866-bnNu/exec";
-  const STORAGE_KEY = "morabilling-pro-v35"; 
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
+  const STORAGE_KEY = "morabilling-pro-v32"; // Cache refresh otomatis ke versi 32
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
-  const ITEM_PER_PAGE = 20;
 
+  const vibe = () => { if (navigator.vibrate) navigator.vibrate(40); };
   const getNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
   const formatRupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");
   const formatNumberInput = (n) => n ? Number(n.toString().replace(/\D/g, "")).toLocaleString('id-ID') : "";
@@ -131,11 +98,14 @@
     }
 
     const nextTerbit = new Date(terbitBulanIni);
-    if (today >= terbitBulanIni) { nextTerbit.setMonth(nextTerbit.getMonth() + 1); }
+    if (today >= terbitBulanIni) {
+       nextTerbit.setMonth(nextTerbit.getMonth() + 1);
+    }
     const daysToNext = Math.ceil((nextTerbit - today) / 86400000);
     return { phase: "normal", label: `Aman. Rilis ${daysToNext} hari lagi`, color: "#059669", bg: "#ECFDF5", urgent: false };
   };
 
+  // ===== OPTIMASI SCRIPT WHATSAPP 100% PERSIS CONTOH REFERENSI =====
   const buildWALink = (p, crm) => {
     const phone = cleanPhone(p.noWa);
     const multiplier = crm.nunggak > 0 ? crm.nunggak : 1;
@@ -145,6 +115,7 @@
     const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
     const currentMonthName = months[today.getMonth()];
     
+    // Perhitungan Tanggal, Bulan, dan Tahun Jatuh Tempo
     const maxDaysThisMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const effectiveTglTerbit = Math.min(crm.tglTerbit, maxDaysThisMonth);
     
@@ -155,13 +126,19 @@
     if (jtDate > maxDaysThisMonth) {
         jtDate = jtDate - maxDaysThisMonth;
         let nextMonthIndex = today.getMonth() + 1;
-        if (nextMonthIndex > 11) { nextMonthIndex = 0; jtYear += 1; }
+        if (nextMonthIndex > 11) {
+            nextMonthIndex = 0;
+            jtYear += 1;
+        }
         jtMonthName = months[nextMonthIndex];
     }
     
     let infoBulan = "";
-    if (crm.nunggak > 1) { infoBulan = ` (${crm.nunggak} Bulan)`; }
+    if (crm.nunggak > 1) {
+        infoBulan = ` (${crm.nunggak} Bulan)`;
+    }
 
+    // Konstruksi Teks dengan layout, spasi perataan kolom, emoji, dan baris baru yang sama persis
     const msgText = `Halo *Kak ${p.nama}*👋\nMau mengingatkan tagihan WiFi MyRepublic bulan ${currentMonthName} ${today.getFullYear()} sudah terbit✨\n\nID Pelanggan : *${p.customerId}*\nTotal                : *${formatRupiah(nominal)}${infoBulan}*\nJatuh Tempo  : *${jtDate} ${jtMonthName} ${jtYear}*\n\nMohon segera melakukan pembayaran sebelum jatuh tempo agar layanan tidak terputus ya Kak\n\nApabila ada kendala harap segera menghubungi/komunikasi dengan Cahyo.\n\nTerima kasih😊🙏🏻`;
     
     return `https://wa.me/${phone}?text=${encodeURIComponent(msgText)}`;
@@ -173,7 +150,7 @@
       const crm = getCRMStats(p);
       return [p.customerId, p.nama, p.noWa, p.tagihan, p.joinDate, crm.usia, crm.bayar, crm.nunggak, p.statusKlien, `"${(p.catatan || "").replace(/"/g, '""')}"`];
     });
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(",")].concat(rows.map(e => e.join(","))).join("\n");
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     
     const date = getNow();
     const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
@@ -184,7 +161,7 @@
   };
 
   const SkeletonLoader = () => (
-    <div style={{ background: "white", padding: 16, borderRadius: 16, marginBottom: 12, display: "flex", gap: 15, gridColumn: "1 / -1" }}>
+    <div style={{ background: "white", padding: 16, borderRadius: 16, marginBottom: 12, display: "flex", gap: 15 }}>
       <div style={{ flex: 1 }}><div className="skeleton" style={{ width: "40%", height: 14, marginBottom: 10 }}></div><div className="skeleton" style={{ width: "80%", height: 20, marginBottom: 10 }}></div><div className="skeleton" style={{ width: "60%", height: 12 }}></div></div>
     </div>
   );
@@ -199,7 +176,7 @@
           <h2 style={{ margin: "0 0 5px", color: "#111827", fontWeight: 800 }}>MoraBilling</h2>
           <p style={{ margin: "0 0 20px", color: "#6B7280", fontSize: 13, fontWeight: 500 }}>Sistem Customer Management.</p>
           <input type="password" value={pin} onChange={(e) => {
-              const num = e.target.value.replace(/\D/g, ""); setPin(num);
+              vibe(); const num = e.target.value.replace(/\D/g, ""); setPin(num);
               if (num.length === 4) { if (num === PIN_RAHASIA) setTimeout(onLogin, 200); else { setError(true); setTimeout(() => { setError(false); setPin(""); }, 800); } }
             }} placeholder="• • • •" style={{ width: "100%", textAlign: "center", fontSize: 24, letterSpacing: 15, padding: 15, borderRadius: 12, border: error ? "2px solid #DC2626" : "2px solid #E5E7EB", marginBottom: 10, background: error ? "#FEF2F2" : "#F9FAFB", fontWeight: 800, color: error ? "#DC2626" : "#111827" }} maxLength={4} />
           {error && <div style={{color:"#DC2626", fontSize:12, fontWeight:700}}>PIN Salah.</div>}
@@ -218,6 +195,7 @@
     const labelStyle = { fontSize: 12, fontWeight: 700, color: "#6B7280", display: "block", marginBottom: 6 };
 
     function handleSave() {
+      vibe();
       let errs = [];
       if (!form.customerId.trim()) errs.push("customerId");
       if (!form.nama.trim()) errs.push("nama");
@@ -234,51 +212,50 @@
     }
 
     return (
-      <div className="modal-overlay" onClick={(e) => { if(e.target === e.currentTarget) onClose(); }}>
-        <div className="modal-content">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{initialData ? "Edit Pelanggan" : "Pelanggan Baru"}</h3>
-            <button onClick={onClose} style={{ background: "#F3F4F6", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 14, fontWeight: 700, color: "#6B7280" }}>X</button>
-          </div>
+      <div style={{ padding: "0 20px 24px", background: "white", borderRadius: "24px 24px 0 0" }}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 16px" }}><div style={{ width: 40, height: 5, background: "#E5E7EB", borderRadius: 3 }}></div></div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{initialData ? "Edit Pelanggan" : "Pelanggan Baru"}</h3>
+          <button onClick={()=>{vibe(); onClose();}} style={{ background: "#F3F4F6", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 14, fontWeight: 700, color: "#6B7280" }}>X</button>
+        </div>
 
-          <label style={labelStyle}>ID Pelanggan *</label>
-          <input style={{...getInputStyle("customerId"), border: errorFields.includes("customerId") ? "2px solid #DC2626" : "2px solid #DDD6FE", background: errorFields.includes("customerId") ? "#FEF2F2" : "white", fontWeight: 700}} placeholder="MR-0001" value={form.customerId} onChange={e => setForm({...form, customerId: e.target.value.toUpperCase()})} />
-          
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div><label style={labelStyle}>Nama *</label><input style={getInputStyle("nama")} placeholder="Budi S." value={form.nama} onChange={e => setForm({...form, nama: e.target.value})} /></div>
-            <div><label style={labelStyle}>No. WA</label><input style={getInputStyle("noWa")} type="tel" placeholder="0812..." value={form.noWa} onChange={e => setForm({...form, noWa: e.target.value.replace(/\D/g, "")})} /></div>
-          </div>
+        <label style={labelStyle}>ID Pelanggan *</label>
+        <input style={{...getInputStyle("customerId"), border: errorFields.includes("customerId") ? "2px solid #DC2626" : "2px solid #DDD6FE", background: errorFields.includes("customerId") ? "#FEF2F2" : "white", fontWeight: 700}} placeholder="MR-0001" value={form.customerId} onChange={e => setForm({...form, customerId: e.target.value.toUpperCase()})} />
+        
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div><label style={labelStyle}>Nama *</label><input style={getInputStyle("nama")} placeholder="Budi S." value={form.nama} onChange={e => setForm({...form, nama: e.target.value})} /></div>
+          <div><label style={labelStyle}>No. WA</label><input style={getInputStyle("noWa")} type="tel" placeholder="0812..." value={form.noWa} onChange={e => setForm({...form, noWa: e.target.value.replace(/\D/g, "")})} /></div>
+        </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div>
-              <label style={labelStyle}>Tagihan (Rp) *</label>
-              <input style={{...getInputStyle("tagihan"), fontWeight:700}} type="tel" placeholder="277.500" value={tagihanUI} onChange={e => {
-                const val = e.target.value; setTagihanUI(formatNumberInput(val)); setForm({...form, tagihan: val.replace(/\D/g, "")});
-              }} />
-            </div>
-            <div>
-              <label style={labelStyle}>Status Berlangganan</label>
-              <select style={{...getInputStyle("statusKlien"), color: form.statusKlien === "Putus" ? "#DC2626" : "#111827", fontWeight: 700}} value={form.statusKlien} onChange={e => setForm({...form, statusKlien: e.target.value})}>
-                <option value="Aktif">Aktif</option>
-                <option value="Putus">Putus (Churn)</option>
-              </select>
-            </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div>
+            <label style={labelStyle}>Tagihan (Rp) *</label>
+            <input style={{...getInputStyle("tagihan"), fontWeight:700}} type="tel" placeholder="277.500" value={tagihanUI} onChange={e => {
+              const val = e.target.value; setTagihanUI(formatNumberInput(val)); setForm({...form, tagihan: val.replace(/\D/g, "")});
+            }} />
           </div>
-          
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "#F3F4F6", padding: 12, borderRadius: 12, marginBottom: 12 }}>
-            <div><label style={labelStyle}>Tgl Pasang *</label><input style={{...getInputStyle("joinDate"), marginBottom:0}} type="date" value={form.joinDate} onChange={e => setForm({...form, joinDate: e.target.value})} /></div>
-            <div><label style={labelStyle}>Total Bulan Terbayar</label><input style={{...getInputStyle("paidCycle"), marginBottom:0, fontWeight:800}} type="number" min="0" value={form.paidCycle} onChange={e => setForm({...form, paidCycle: e.target.value})} /></div>
+          <div>
+            <label style={labelStyle}>Status Berlangganan</label>
+            <select style={{...getInputStyle("statusKlien"), color: form.statusKlien === "Putus" ? "#DC2626" : "#111827", fontWeight: 700}} value={form.statusKlien} onChange={e => setForm({...form, statusKlien: e.target.value})}>
+              <option value="Aktif">Aktif</option>
+              <option value="Putus">Putus (Churn)</option>
+            </select>
           </div>
+        </div>
+        
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "#F3F4F6", padding: 12, borderRadius: 12, marginBottom: 12 }}>
+          <div><label style={labelStyle}>Tgl Pasang *</label><input style={{...getInputStyle("joinDate"), marginBottom:0}} type="date" value={form.joinDate} onChange={e => setForm({...form, joinDate: e.target.value})} /></div>
+          <div><label style={labelStyle}>Total Bulan Terbayar</label><input style={{...getInputStyle("paidCycle"), marginBottom:0, fontWeight:800}} type="number" min="0" value={form.paidCycle} onChange={e => setForm({...form, paidCycle: e.target.value})} /></div>
+        </div>
 
-          <label style={labelStyle}>Catatan / Keterangan</label>
-          <textarea style={{...getInputStyle("catatan"), height: 70, resize: "none"}} placeholder="Contoh: Janji bayar tgl 15..." value={form.catatan} onChange={e => setForm({...form, catatan: e.target.value})} />
+        <label style={labelStyle}>Catatan / Keterangan</label>
+        <textarea style={{...getInputStyle("catatan"), height: 70, resize: "none"}} placeholder="Contoh: Janji bayar tgl 15..." value={form.catatan} onChange={e => setForm({...form, catatan: e.target.value})} />
 
-          {errorMsg && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12, fontWeight: 600, background: "#FEF2F2", padding: "10px", borderRadius: "8px" }}>{errorMsg}</div>}
-          
-          <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-            {initialData && <button onClick={() => onDelete(initialData)} style={{ padding: "14px 20px", background: "#FEF2F2", color: "#DC2626", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700 }}>Hapus</button>}
-            <button onClick={handleSave} style={{ flex: 1, background: "linear-gradient(135deg, #7C3AED, #4C1D95)", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 700 }}>Simpan Data</button>
-          </div>
+        {errorMsg && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12, fontWeight: 600, background: "#FEF2F2", padding: "10px", borderRadius: "8px" }}>{errorMsg}</div>}
+        
+        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+          {initialData && <button onClick={() => { vibe(); onDelete(initialData.id); }} style={{ padding: "14px 20px", background: "#FEF2F2", color: "#DC2626", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700 }}>Hapus</button>}
+          <button onClick={handleSave} style={{ flex: 1, background: "linear-gradient(135deg, #7C3AED, #4C1D95)", color: "white", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 700 }}>Simpan Data</button>
         </div>
       </div>
     );
@@ -288,13 +265,8 @@
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [pelanggan, setPelanggan] = useState([]);
     const [loading, setLoading] = useState(true);
-    
-    // Fitur: Debounce & Pagination state
-    const [search, setSearch] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [filter, setFilter] = useState("semua");
-    const [visibleCount, setVisibleCount] = useState(ITEM_PER_PAGE);
-    
+    const [search, setSearch] = useState("");
     const [showForm, setShowForm] = useState(false);
     const [editItem, setEditItem] = useState(null);
     const [toast, setToast] = useState(null);
@@ -314,13 +286,6 @@
       fetchData();
     }, [isLoggedIn]);
 
-    useEffect(() => {
-      const handler = setTimeout(() => { setDebouncedSearch(search); setVisibleCount(ITEM_PER_PAGE); }, 300);
-      return () => { clearTimeout(handler); };
-    }, [search]);
-
-    useEffect(() => { setVisibleCount(ITEM_PER_PAGE); }, [filter]);
-
     const fetchData = () => {
       if (!navigator.onLine) { showMsg("Offline. Menampilkan data lokal.", "error"); setLoading(false); return; }
       setLoading(true);
@@ -332,23 +297,9 @@
 
     const showMsg = (msg, type="success") => { setToast({msg, type}); if(type !== "loading") setTimeout(() => setToast(null), 2500); };
 
-    const handleAPI = (updatedData, successMsg, logActionDetail) => {
+    const handleAPI = (updatedData, successMsg) => {
       showMsg("Menyimpan ke server...", "loading");
-      
-      let payload = { data: updatedData };
-      if (logActionDetail) {
-         const now = getNow();
-         const tglJam = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-         payload.log = {
-            timestamp: tglJam,
-            action: logActionDetail.action,
-            customerId: logActionDetail.id,
-            nama: logActionDetail.nama,
-            details: logActionDetail.detail
-         };
-      }
-
-      fetch(SCRIPT_URL + "?action=save", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) })
+      fetch(SCRIPT_URL + "?action=save", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(updatedData) })
         .then(res => res.json())
         .then(json => {
           if(json.success) { showMsg(successMsg); localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData)); }
@@ -363,19 +314,20 @@
       const updated = isEdit ? pelanggan.map(p => p.id === dataToSave.id ? dataToSave : p) : [...pelanggan, { ...dataToSave, id: String(Date.now()) }];
       
       setPelanggan(updated); setShowForm(false); setEditItem(null);
-      const logMsg = isEdit ? "Update Data Pelanggan" : "Pelanggan Baru Ditambahkan";
-      handleAPI(updated, "Berhasil disimpan!", { action: isEdit ? "EDIT" : "TAMBAH", id: dataToSave.customerId, nama: dataToSave.nama, detail: logMsg });
+      handleAPI(updated, "Berhasil disimpan!");
     };
 
     const catatBayar = (p) => {
       vibe();
       const crm = getCRMStats(p);
       if (crm.nunggak === 0) return; 
+      
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
       const currentBayar = parseInt(p.paidCycle, 10) || 0;
-      const updated = pelanggan.map(x => x.id === p.id ? { ...x, paidCycle: currentBayar + 1 } : x);
+      const updatedP = { ...p, paidCycle: currentBayar + 1 };
+      const updated = pelanggan.map(x => x.id === p.id ? updatedP : x);
       setPelanggan(updated);
-      handleAPI(updated, "Pembayaran 1 Bulan Dicatat!", { action: "BAYAR", id: p.customerId, nama: p.nama, detail: `Tercatat bayar ke-${currentBayar + 1}` });
+      handleAPI(updated, "Pembayaran 1 Bulan Dicatat!");
     };
 
     const batalBayar = (p) => {
@@ -383,18 +335,19 @@
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
       const currentBayar = parseInt(p.paidCycle, 10) || 0;
       if (currentBayar <= 0) return;
-      if (!window.confirm(`Batalkan 1x pembayaran untuk ${p.nama}?`)) return;
-      const updated = pelanggan.map(x => x.id === p.id ? { ...x, paidCycle: currentBayar - 1 } : x);
+      if (!window.confirm(`Batalkan 1x pembayaran untuk ${p.nama}? (Status tagihan akan bertambah 1 bulan)`)) return;
+      const updatedP = { ...p, paidCycle: currentBayar - 1 };
+      const updated = pelanggan.map(x => x.id === p.id ? updatedP : x);
       setPelanggan(updated);
-      handleAPI(updated, "Pembayaran Dibatalkan!", { action: "BATAL BAYAR", id: p.customerId, nama: p.nama, detail: `Membatalkan bayar ke-${currentBayar}` });
+      handleAPI(updated, "Pembayaran Dibatalkan!");
     };
 
-    const handleDelete = (p) => {
+    const handleDelete = (id) => {
       if (!navigator.onLine) { showMsg("Gagal hapus. Koneksi Offline!", "error"); return; }
       if(!window.confirm("Hapus data ini permanen?")) return;
-      const updated = pelanggan.filter(x => x.id !== p.id);
+      const updated = pelanggan.filter(x => x.id !== id);
       setPelanggan(updated); setShowForm(false);
-      handleAPI(updated, "Data Terhapus", { action: "HAPUS", id: p.customerId, nama: p.nama, detail: "Dihapus Permanen" });
+      handleAPI(updated, "Data Terhapus");
     };
 
     const stats = useMemo(() => {
@@ -411,7 +364,7 @@
 
     const filtered = useMemo(() => {
       return pelanggan.filter(p => {
-        const m = (p.nama||"").toLowerCase().includes(debouncedSearch.toLowerCase()) || (p.customerId||"").toLowerCase().includes(debouncedSearch.toLowerCase());
+        const m = (p.nama||"").toLowerCase().includes(search.toLowerCase()) || (p.customerId||"").toLowerCase().includes(search.toLowerCase());
         if (!m) return false;
 
         if (filter === "putus") return p.statusKlien === "Putus";
@@ -435,48 +388,37 @@
       }).sort((a, b) => {
         const aCrm = getCRMStats(a); const bCrm = getCRMStats(b);
         if (aCrm.nunggak !== bCrm.nunggak) return bCrm.nunggak - aCrm.nunggak;
-        const today = getNow(); today.setHours(0,0,0,0);
-        
-        const terbitA = new Date(today.getFullYear(), today.getMonth(), aCrm.tglTerbit);
-        const jtA = new Date(today.getFullYear(), today.getMonth(), aCrm.tglTerbit + HARI_TEMPO);
-        const isUrgentA = aCrm.nunggak > 0 && (aCrm.nunggak > 1 || today > jtA || today.getTime() === terbitA.getTime());
-        
-        const terbitB = new Date(today.getFullYear(), today.getMonth(), bCrm.tglTerbit);
-        const jtB = new Date(today.getFullYear(), today.getMonth(), bCrm.tglTerbit + HARI_TEMPO);
-        const isUrgentB = bCrm.nunggak > 0 && (bCrm.nunggak > 1 || today > jtB || today.getTime() === terbitB.getTime());
-        
-        if (isUrgentA !== isUrgentB) return isUrgentA ? -1 : 1;
+        const aU = aCrm.nunggak > 0 && ["terbit", "aktif", "lewat"].includes(getBillingPhase(a, aCrm).phase);
+        const bU = bCrm.nunggak > 0 && ["terbit", "aktif", "lewat"].includes(getBillingPhase(b, bCrm).phase);
+        if (aU !== bU) return aU ? -1 : 1;
         return aCrm.tglTerbit - bCrm.tglTerbit;
       });
-    }, [pelanggan, filter, debouncedSearch]);
-
-    const visibleData = filtered.slice(0, visibleCount);
-    const hasMore = visibleCount < filtered.length;
+    }, [pelanggan, filter, search]);
 
     if (!isLoggedIn) return <LoginScreen onLogin={() => setIsLoggedIn(true)} />;
 
     return (
-      <div className="app-wrap">
-        <div className="top-banner">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", paddingBottom: 100 }}>
+        <div style={{ background: "linear-gradient(160deg, #5B21B6, #4C1D95)", padding: "24px 20px 30px", color: "white", borderBottomLeftRadius: 24, borderBottomRightRadius: 24, boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <div>
               <div style={{ fontSize: 11, letterSpacing: 2, opacity: 0.7, textTransform: "uppercase", fontWeight: 700 }}>Customer Management</div>
               <div style={{ fontSize: 24, fontWeight: 800 }}>MoraBilling</div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               {!isOnline && <div style={{ background: "#DC2626", color: "white", padding: "6px 10px", borderRadius: 10, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center" }}>Offline</div>}
-              <button onClick={() => exportToCSV(pelanggan)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 12, padding: "8px 12px", color: "white", fontSize: 12, fontWeight: 700 }}>Export Semua CSV</button>
+              <button onClick={() => {vibe(); exportToCSV(pelanggan);}} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 12, padding: "8px 12px", color: "white", fontSize: 12, fontWeight: 700 }}>Export CSV</button>
             </div>
           </div>
 
-          <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 16, padding: 15, marginTop: 20 }}>
-            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8 }}>Status Pelanggan Aktif ({stats.total} ID)</div>
-            <div className="stats-row">
-              <div style={{ background: "rgba(16, 185, 129, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
+          <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 16, padding: 15 }}>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 15 }}>Status Pelanggan Aktif ({stats.total} ID)</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1, background: "rgba(16, 185, 129, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#34D399" }}>{stats.lunas}</div>
                 <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4, fontWeight: 600 }}>Lunas Berjalan</div>
               </div>
-              <div style={{ background: "rgba(239, 68, 68, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
+              <div style={{ flex: 1, background: "rgba(239, 68, 68, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#FCA5A5" }}>{stats.belum}</div>
                 <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4, fontWeight: 600 }}>Ada Tagihan</div>
               </div>
@@ -484,25 +426,24 @@
           </div>
         </div>
 
-        <div className="sticky-controls">
-          <div style={{ position: "relative" }}>
-            <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, pointerEvents: "none" }}>\uD83D\uDD0D</span>
-            <input placeholder="Cari nama atau ID..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", padding: "12px 36px 12px 40px", borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 14, fontWeight: 500, background: "white", color: "#111827", boxSizing: "border-box" }} />
-            {search && <button onClick={() => setSearch("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", background: "#F3F4F6", color: "#6B7280", border: "none", fontSize: 12, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }}>\u2715</button>}
+        <div className="sticky-top">
+          <div style={{ position: "relative", marginBottom: 12 }}>
+            <input placeholder="Cari nama atau ID pelanggan..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", padding: "12px 36px 12px 16px", borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 14, fontWeight: 500, background: "white", color: "#111827", boxSizing: "border-box" }} />
+            {search && <button onClick={() => {vibe(); setSearch("");}} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", background: "#F3F4F6", color: "#6B7280", border: "none", fontSize: 12, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>}
           </div>
           
-          <div className="filter-scroll">
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, width: "100%" }}>
             {[
               ['semua', 'Semua Aktif'], ['belum', 'Ada Tagihan'], ['lunas', 'Lunas Semua'], ['putus', 'Putus / Churn']
             ].map(([v, l]) => (
-              <button key={v} onClick={() => setFilter(v)} style={{ padding: "8px 14px", borderRadius: 20, border: "1px solid #E5E7EB", fontSize: 12, fontWeight: 700, background: filter === v ? "#111827" : "white", color: filter === v ? "white" : "#6B7280", whiteSpace: "nowrap" }}>{l}</button>
+              <button key={v} onClick={() => {vibe(); setFilter(v);}} style={{ padding: "6px 14px", borderRadius: 20, border: "1px solid #E5E7EB", fontSize: 12, fontWeight: 700, background: filter === v ? "#111827" : "white", color: filter === v ? "white" : "#6B7280", whiteSpace: "nowrap", transition: "0.2s" }}>{l}</button>
             ))}
           </div>
 
-          <div className="dropdown-row">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4, paddingBottom: 4 }}>
             <select 
               value={['c1','c4','c7','c12'].includes(filter) ? filter : ""} 
-              onChange={e => setFilter(e.target.value || "semua")} 
+              onChange={e => { vibe(); setFilter(e.target.value || "semua"); }} 
               style={{ width: "100%", padding: "8px 10px", borderRadius: 10, border: "1px solid #E5E7EB", background: "white", fontSize: 11, fontWeight: 700, color: "#4B5563" }}
             >
               <option value="">Filter Usia...</option>
@@ -514,7 +455,7 @@
 
             <select 
               value={['b0','b4','b7','b12'].includes(filter) ? filter : ""} 
-              onChange={e => setFilter(e.target.value || "semua")} 
+              onChange={e => { vibe(); setFilter(e.target.value || "semua"); }} 
               style={{ width: "100%", padding: "8px 10px", borderRadius: 10, border: "1px solid #E5E7EB", background: "white", fontSize: 11, fontWeight: 700, color: "#4B5563" }}
             >
               <option value="">Filter Total Bayar...</option>
@@ -527,111 +468,156 @@
         </div>
 
         <div style={{ padding: "0 16px" }}>
-            <div style={{ fontSize: 11, color: "#9CA3AF", textAlign: "center", marginBottom: 12, fontWeight: 500 }}>Diurutkan berdasarkan prioritas penagihan terpenting</div>
+            <div style={{ fontSize: 10, color: "#9CA3AF", textAlign: "center", marginBottom: 8 }}>Diurutkan berdasarkan prioritas penagihan</div>
         </div>
 
-        <div className="customer-grid">
+        <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 12 }}>
           {loading && pelanggan.length === 0 ? (
-            <React.Fragment><SkeletonLoader /><SkeletonLoader /><SkeletonLoader /></React.Fragment>
+            <React.Fragment><SkeletonLoader /><SkeletonLoader /></React.Fragment>
           ) : 
            filtered.length === 0 ? (
-            <div style={{ background: "white", borderRadius: 16, padding: "40px 20px", textAlign: "center", border: "1px dashed #D1D5DB", gridColumn: "1 / -1" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>{filter === "belum" ? "\uD83C\uDF89" : "\uD83D\uDD0D"}</div>
+            <div style={{ background: "white", borderRadius: 16, padding: "40px 20px", textAlign: "center", border: "1px dashed #D1D5DB" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>{filter === "belum" ? "🎉" : "🔍"}</div>
               <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{filter === "belum" ? "Semua Tagihan Aman!" : "Data tidak ditemukan"}</div>
               <div style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>{filter === "belum" ? "Kerja bagus! Tidak ada pelanggan aktif yang memiliki tagihan." : "Coba bersihkan filter dropdown atau ketik nama lain."}</div>
             </div>
            ) :
-           visibleData.map(p => {
+           filtered.map(p => {
             const isPutus = p.statusKlien === "Putus";
             const crm = getCRMStats(p);
+            const status = getBillingPhase(p, crm);
 
             return (
-              <div key={p.id} className="card-enter" style={{ background: "white", padding: 20, borderRadius: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", borderLeft: `5px solid ${isPutus ? "#9CA3AF" : (crm.nunggak === 0 ? "#10B981" : (crm.nunggak > 1 ? "#DC2626" : "#D97706"))}`, opacity: isPutus ? 0.6 : 1, filter: isPutus ? "grayscale(100%)" : "none", display: "flex", flexDirection: "column" }}>
-                
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+              <div key={p.id} className="card-enter" style={{ background: "white", padding: 16, borderRadius: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", borderLeft: `5px solid ${isPutus ? "#9CA3AF" : (crm.nunggak === 0 ? "#10B981" : status.color)}`, opacity: isPutus ? 0.6 : 1, transition: "all 0.2s ease", filter: isPutus ? "grayscale(100%)" : "none" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <div>
-                    <div style={{ display:"flex", gap:6, flexWrap: "wrap", alignItems:"center", marginBottom:8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#6D28D9", background: "#EDE9FE", padding: "3px 8px", borderRadius: 6 }}>{p.customerId}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, background: "#F3F4F6", color: "#4B5563", padding: "3px 8px", borderRadius: 6 }}>
-                        Pasang: {formatDate(p.joinDate)}
+                    <div style={{ display:"flex", gap:6, flexWrap: "wrap", alignItems:"center", marginBottom:6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#6D28D9", background: "#EDE9FE", padding: "2px 8px", borderRadius: 6 }}>{p.customerId}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, background: "#F3F4F6", color: "#4B5563", padding: "2px 6px", borderRadius: 4 }}>
+                        Tgl Pasang: {formatDate(p.joinDate)}
                       </span>
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "#111827", textDecoration: isPutus ? "line-through" : "none" }}>{p.nama}</div>
-                    <div style={{ fontSize: 13, color: "#6B7280", marginTop: 4, fontWeight: 500 }}>{p.noWa}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", textDecoration: isPutus ? "line-through" : "none" }}>{p.nama}</div>
+                    <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2, fontWeight: 500 }}>{p.noWa}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: isPutus ? "#6B7280" : (crm.nunggak === 0 ? "#10B981" : "#111827"), textDecoration: isPutus ? "line-through" : "none" }}>{formatRupiah(p.tagihan)}</div>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: isPutus ? "#6B7280" : (crm.nunggak === 0 ? "#10B981" : "#111827"), textDecoration: isPutus ? "line-through" : "none" }}>{formatRupiah(p.tagihan)}</div>
                   </div>
                 </div>
                 
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                   <span style={{ background: "#F3F4F6", color: "#374151", padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700 }}>Usia: {crm.usia} Bln</span>
+                <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+                   <span style={{ background: "#F3F4F6", color: "#374151", padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700 }}>Usia: {crm.usia} Bulan</span>
                    <span style={{ background: crm.bayar === 0 ? "#F3F4F6" : "#ECFDF5", color: crm.bayar === 0 ? "#6B7280" : "#059669", padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700 }}>Total Bayar: {crm.bayar}x</span>
                    {crm.nunggak > 0 && !isPutus && (
-                     <span style={{ background: "#FEF2F2", color: "#DC2626", padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800 }}>Tagihan {crm.nunggak} Bln</span>
+                     <span style={{ background: "#FEF2F2", color: "#DC2626", padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800 }}>Tagihan {crm.nunggak} Bulan</span>
                    )}
                 </div>
 
-                {p.catatan && <div style={{ fontSize: 12, color: "#4B5563", marginTop: 12, padding: "8px 12px", background: "#FFFBEB", borderLeft: "3px solid #D97706", borderRadius: 6, fontWeight: 500 }}>Catatan: {p.catatan}</div>}
+                {p.catatan && <div style={{ fontSize: 11, color: "#4B5563", marginTop: 10, padding: "8px 12px", background: "#FFFBEB", borderLeft: "2px solid #D97706", borderRadius: 4, fontWeight: 500 }}>Catatan: {p.catatan}</div>}
 
-                <div style={{ marginTop: "auto" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingTop: 16, borderTop: "1px dashed #E5E7EB" }}>
-                    <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 500 }}>Terbit Tgl <b style={{color:"#111827"}}>{crm.tglTerbit}</b></div>
-                    {!isPutus && crm.nunggak === 0 && <span style={{ background: "#ECFDF5", color: "#059669", padding: "4px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800 }}>Aman</span>}
-                  </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px dashed #E5E7EB" }}>
+                  <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 500 }}>Terbit Tgl <b style={{color:"#111827"}}>{crm.tglTerbit}</b> setiap bulan</div>
+                  {!isPutus && crm.nunggak === 0 && <span style={{ background: status.bg, color: status.color, padding: "4px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800 }}>{status.label}</span>}
+                </div>
+                
+                {(() => {
+                  if (isPutus || crm.nunggak === 0) return null;
                   
-                  {(() => {
-                    if (isPutus || crm.nunggak === 0) return null;
-                    const today = getNow(); today.setHours(0, 0, 0, 0);
-                    const jtDate = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit + HARI_TEMPO);
-                    const tglTerbitDate = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit);
-                    
-                    let noteText = ""; let noteColor = "";
-                    if (crm.nunggak === 1) {
-                        if (today >= tglTerbitDate && today <= jtDate) {
-                            const sisaHari = Math.ceil((jtDate - today) / 86400000);
-                            if (sisaHari === 0) { noteText = "\u26A0\uFE0F Hari ini batas terakhir bayar!"; } 
-                            else { noteText = `\u23F3 Sisa waktu bayar: ${sisaHari} Hari`; }
-                            noteColor = "#D97706"; 
-                        } else { noteText = "\u26A0\uFE0F Peringatan: Telat Bayar!"; noteColor = "#DC2626"; }
-                    } else { noteText = `\u26A0\uFE0F Peringatan: Telat Bayar ${crm.nunggak} Bulan!`; noteColor = "#DC2626"; }
+                  const today = getNow();
+                  today.setHours(0, 0, 0, 0);
+                  
+                  const jtDate = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit + HARI_TEMPO);
+                  const tglTerbitDate = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit);
+                  
+                  let noteText = "";
+                  let noteColor = "";
+                  
+                  if (crm.nunggak === 1) {
+                      if (today >= tglTerbitDate && today <= jtDate) {
+                          const sisaHari = Math.ceil((jtDate - today) / 86400000);
+                          if (sisaHari === 0) {
+                              noteText = "⚠️ Hari ini batas terakhir bayar!";
+                          } else {
+                              noteText = `⏳ Sisa waktu bayar: ${sisaHari} Hari`;
+                          }
+                          noteColor = "#D97706"; 
+                      } else {
+                          noteText = "⚠️ Peringatan: Telat Bayar!";
+                          noteColor = "#DC2626"; 
+                      }
+                  } else {
+                      noteText = `⚠️ Peringatan: Telat Bayar ${crm.nunggak} Bulan!`;
+                      noteColor = "#DC2626"; 
+                  }
 
-                    return <div style={{ fontSize: 12, color: noteColor, fontWeight: 800, marginTop: 8, textAlign: "right", letterSpacing: "0.2px" }}>{noteText}</div>;
-                  })()}
+                  return (
+                    <div style={{ fontSize: 11, color: noteColor, fontWeight: 800, marginTop: 8, textAlign: "right", letterSpacing: "0.2px" }}>
+                      {noteText}
+                    </div>
+                  );
+                })()}
 
-                  <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                    {!isPutus && (
-                      <React.Fragment>
-                        <a href={buildWALink(p, crm)} target="_blank" style={{ flex: 1, background: (crm.nunggak > 1 || (crm.nunggak===1 && getNow().getDate() > (crm.tglTerbit+HARI_TEMPO))) ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>WA Reminder</a>
+                <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                  {!isPutus && (
+                    <React.Fragment>
+                      <a onClick={()=>vibe()} href={buildWALink(p, crm)} target="_blank" style={{ flex: 1, background: (status.urgent || crm.nunggak > 0) ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>WA Reminder</a>
+                      
+                      <div style={{ display: "flex", flex: 1, gap: 4 }}>
+                        <button 
+                          onClick={() => batalBayar(p)} 
+                          disabled={crm.bayar <= 0}
+                          style={{ 
+                            flex: 0.3, 
+                            background: crm.bayar <= 0 ? "#F9FAFB" : "#FEF2F2", 
+                            color: crm.bayar <= 0 ? "#D1D5DB" : "#DC2626", 
+                            border: crm.bayar <= 0 ? "1px solid #F3F4F6" : "1px solid #FCA5A5", 
+                            borderRadius: 10, 
+                            fontSize: 16, 
+                            fontWeight: 800,
+                            cursor: crm.bayar <= 0 ? "not-allowed" : "pointer"
+                          }}
+                        >
+                          -
+                        </button>
                         
-                        <div style={{ display: "flex", flex: 1, gap: 6 }}>
-                          <button onClick={() => batalBayar(p)} disabled={crm.bayar <= 0} style={{ flex: 0.3, background: crm.bayar <= 0 ? "#F9FAFB" : "#FEF2F2", color: crm.bayar <= 0 ? "#D1D5DB" : "#DC2626", border: crm.bayar <= 0 ? "1px solid #F3F4F6" : "1px solid #FCA5A5", borderRadius: 10, fontSize: 16, fontWeight: 800, cursor: crm.bayar <= 0 ? "not-allowed" : "pointer" }}>-</button>
-                          <button onClick={() => catatBayar(p)} disabled={crm.nunggak === 0} style={{ flex: 1, background: crm.nunggak === 0 ? "#E5E7EB" : "#ECFDF5", color: crm.nunggak === 0 ? "#9CA3AF" : "#059669", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: crm.nunggak === 0 ? "not-allowed" : "pointer" }}>{crm.nunggak === 0 ? "\u2713 Lunas" : "+ Bayar"}</button>
-                        </div>
-                      </React.Fragment>
-                    )}
-                    <button onClick={() => setEditItem({...p})} style={{ flex: isPutus ? 1 : 0.4, padding: "10px", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, color: "#374151", fontWeight: 700 }}>Edit</button>
-                  </div>
+                        <button 
+                          onClick={() => catatBayar(p)} 
+                          disabled={crm.nunggak === 0} 
+                          style={{ 
+                            flex: 1, 
+                            background: crm.nunggak === 0 ? "#E5E7EB" : "#ECFDF5", 
+                            color: crm.nunggak === 0 ? "#9CA3AF" : "#059669", 
+                            border: "none", 
+                            borderRadius: 10, 
+                            fontSize: 12, 
+                            fontWeight: 700,
+                            cursor: crm.nunggak === 0 ? "not-allowed" : "pointer"
+                          }}
+                        >
+                          {crm.nunggak === 0 ? "✓ Lunas" : "+ Bayar"}
+                        </button>
+                      </div>
+                    </React.Fragment>
+                  )}
+                  <button onClick={() => { vibe(); setEditItem({...p}); setShowForm(true); }} style={{ flex: isPutus ? 1 : 0.6, padding: "10px", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, color: "#374151", fontWeight: 700 }}>Edit</button>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {hasMore && !loading && (
-          <button className="load-more-btn" onClick={() => { vibe(); setVisibleCount(v => v + ITEM_PER_PAGE); }}>
-            Tampilkan Lebih Banyak &darr;
-          </button>
-        )}
-
-        <button onClick={() => setEditItem(null)} style={{ position: "fixed", bottom: 24, right: 20, width: 60, height: 60, borderRadius: 30, background: "linear-gradient(135deg, #7C3AED, #4C1D95)", color: "white", border: "none", fontSize: 32, fontWeight: 300, boxShadow: "0 4px 15px rgba(76,29,149,0.4)", zIndex: 50, cursor: "pointer" }}>+</button>
+        <button onClick={() => { vibe(); setEditItem(null); setShowForm(true); }} style={{ position: "fixed", bottom: 24, right: 20, width: 60, height: 60, borderRadius: 30, background: "linear-gradient(135deg, #7C3AED, #4C1D95)", color: "white", border: "none", fontSize: 32, fontWeight: 300, boxShadow: "0 4px 15px rgba(76,29,149,0.4)", zIndex: 50 }}>+</button>
 
         {showForm && (
-          <AddForm initialData={editItem} onSave={handleSave} onDelete={handleDelete} onClose={() => {setEditItem(null); setShowForm(false);}} />
+          <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "flex-end" }}>
+            <div className="sheet-enter" style={{ background: "white", width: "100%", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "90vh", overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom, 20px)" }}>
+              <AddForm initialData={editItem} onSave={handleSave} onDelete={handleDelete} onClose={() => setShowForm(false)} />
+            </div>
+          </div>
         )}
         
         {toast && (
-          <div style={{ position: "fixed", bottom: 40, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#DC2626" : toast.type === "loading" ? "#4C1D95" : "#111827", color: "white", padding: "12px 24px", borderRadius: 12, fontSize: 13, fontWeight: 700, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", zIndex: 200, display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#DC2626" : toast.type === "loading" ? "#4C1D95" : "#111827", color: "white", padding: "12px 24px", borderRadius: 12, fontSize: 13, fontWeight: 700, boxShadow: "0 4px 15px rgba(0,0,0,0.2)", zIndex: 200, display: "flex", alignItems: "center", gap: 10 }}>
             {toast.type === "loading" && <span className="spinner"></span>}
             {toast.msg}
           </div>
