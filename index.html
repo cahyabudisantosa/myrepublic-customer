@@ -36,9 +36,8 @@
 <script type="text/babel">
   const { useState, useEffect, useMemo } = React;
 
-  // ===== KONFIGURASI UTAMA SISTEM =====
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v24"; // Reset otomatis cache versi lama
+  const STORAGE_KEY = "morabilling-pro-v25"; 
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
@@ -47,6 +46,7 @@
   const formatRupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");
   const formatNumberInput = (n) => n ? Number(n.toString().replace(/\D/g, "")).toLocaleString('id-ID') : "";
   const cleanPhone = (wa) => { let num = String(wa || "").replace(/\D/g, ""); if (num.startsWith("0")) return "62" + num.substring(1); if (num.startsWith("8")) return "62" + num; return num; };
+  const toTitleCase = (str) => { return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()); };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "-";
@@ -56,7 +56,6 @@
     return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`;
   };
 
-  // ===== KECERDASAN LEDGER (SISTEM AKUNTANSI BILLING) =====
   const getCRMStats = (p) => {
     if (!p.joinDate) return { usia: 1, bayar: 0, nunggak: 0, tglTerbit: 1 };
     const d = new Date(p.joinDate);
@@ -119,7 +118,13 @@
       return [p.customerId, p.nama, p.noWa, p.tagihan, p.joinDate, crm.usia, crm.bayar, crm.nunggak, p.statusKlien, `"${(p.catatan || "").replace(/"/g, '""')}"`];
     });
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-    const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = `MoraBilling_${getNow().getTime()}.csv`;
+    
+    // Perbaikan Mikro: Format nama file CSV
+    const date = getNow();
+    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const fileName = `MoraBilling_${date.getDate()}_${months[date.getMonth()]}_${date.getFullYear()}.csv`;
+    
+    const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = fileName;
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   };
 
@@ -166,9 +171,12 @@
       if (!form.joinDate) errs.push("joinDate"); 
 
       if (errs.length > 0) { setErrorFields(errs); setErrorMsg("Mohon lengkapi kotak merah."); return; }
+      
       const tglPsg = new Date(form.joinDate);
       const terbit = tglPsg.getDate();
-      onSave({...form, tanggalTerbit: terbit});
+      
+      // Perbaikan Mikro: Auto Title Case untuk Nama Pelanggan
+      onSave({...form, nama: toTitleCase(form.nama.trim()), tanggalTerbit: terbit});
     }
 
     return (
@@ -269,7 +277,11 @@
 
     const handleSave = (data) => {
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
-      const dataToSave = { ...data, statusKlien: data.statusKlien || "Aktif", paidCycle: data.paidCycle || 0 };
+      
+      let finalJoinDate = data.startCycle || "";
+      if (finalJoinDate && finalJoinDate.length === 7) { finalJoinDate += "-01"; }
+      
+      const dataToSave = { ...data, joinDate: finalJoinDate, statusKlien: data.statusKlien || "Aktif", paidCycle: data.paidCycle || 0 };
       const isEdit = !!data.id;
       const updated = isEdit ? pelanggan.map(p => p.id === dataToSave.id ? dataToSave : p) : [...pelanggan, { ...dataToSave, id: String(Date.now()) }];
       
@@ -427,6 +439,11 @@
           </div>
         </div>
 
+        {/* Perbaikan Mikro: Teks panduan indikator sortir */}
+        <div style={{ padding: "0 16px" }}>
+            <div style={{ fontSize: 10, color: "#9CA3AF", textAlign: "center", marginBottom: 8 }}>Diurutkan berdasarkan prioritas penagihan</div>
+        </div>
+
         <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 12 }}>
           {loading && pelanggan.length === 0 ? (
             <React.Fragment><SkeletonLoader /><SkeletonLoader /><SkeletonLoader /></React.Fragment>
@@ -482,7 +499,8 @@
                       <a onClick={()=>vibe()} href={buildWALink(p, crm)} target="_blank" style={{ flex: 1, background: (status.urgent || crm.nunggak > 0) ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>WA Reminder</a>
                       
                       <div style={{ display: "flex", flex: 1, gap: 4 }}>
-                        <button onClick={() => batalBayar(p)} style={{ flex: 0.3, background: "#FEF2F2", color: "#DC2626", border: "none", borderRadius: 10, fontSize: 16, fontWeight: 800 }}>-</button>
+                        {/* Perbaikan Mikro Kosmetik pada Tombol Minus */}
+                        <button onClick={() => batalBayar(p)} style={{ flex: 0.3, background: "#FEF2F2", color: "#DC2626", border: "1px solid #FCA5A5", borderRadius: 10, fontSize: 16, fontWeight: 800 }}>-</button>
                         
                         <button 
                           onClick={() => catatBayar(p)} 
