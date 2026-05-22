@@ -37,7 +37,7 @@
   const { useState, useEffect, useMemo } = React;
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v27"; 
+  const STORAGE_KEY = "morabilling-pro-v28"; // Memaksa cache clear agar bug hilang total
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
@@ -57,6 +57,7 @@
   };
 
   const getCRMStats = (p) => {
+    // Validasi super ketat agar tidak error jika joinDate bermasalah
     if (!p.joinDate) return { usia: 1, bayar: 0, nunggak: 0, tglTerbit: 1 };
     const d = new Date(p.joinDate);
     if (isNaN(d.getTime())) return { usia: 1, bayar: 0, nunggak: 0, tglTerbit: 1 };
@@ -175,8 +176,9 @@
 
       if (errs.length > 0) { setErrorFields(errs); setErrorMsg("Mohon lengkapi kotak merah."); return; }
       
-      const tglPsg = new Date(form.joinDate);
-      const terbit = tglPsg.getDate();
+      const parts = form.joinDate.split("-");
+      const terbit = parseInt(parts[2], 10); // Menarik hari (tgl) dari format YYYY-MM-DD
+      
       onSave({...form, nama: toTitleCase(form.nama.trim()), tanggalTerbit: terbit});
     }
 
@@ -279,10 +281,8 @@
     const handleSave = (data) => {
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
       
-      let finalJoinDate = data.startCycle || "";
-      if (finalJoinDate && finalJoinDate.length === 7) { finalJoinDate += "-01"; }
-      
-      const dataToSave = { ...data, joinDate: finalJoinDate, statusKlien: data.statusKlien || "Aktif", paidCycle: data.paidCycle || 0 };
+      // PERBAIKAN BUG: langsung menggunakan joinDate murni tanpa embel-embel "-01" lagi
+      const dataToSave = { ...data, statusKlien: data.statusKlien || "Aktif", paidCycle: data.paidCycle || 0 };
       const isEdit = !!data.id;
       const updated = isEdit ? pelanggan.map(p => p.id === dataToSave.id ? dataToSave : p) : [...pelanggan, { ...dataToSave, id: String(Date.now()) }];
       
@@ -493,7 +493,6 @@
                   {!isPutus && crm.nunggak === 0 && <span style={{ background: status.bg, color: status.color, padding: "4px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800 }}>{status.label}</span>}
                 </div>
                 
-                {/* Perbaikan Mikro: Instruksi Jatuh Tempo Dinamis */}
                 {(() => {
                   if (isPutus || crm.nunggak === 0) return null;
                   
@@ -513,14 +512,14 @@
                           } else {
                               noteText = `⏳ Sisa waktu bayar: ${sisaHari} Hari`;
                           }
-                          noteColor = "#D97706"; // Amber
+                          noteColor = "#D97706"; 
                       } else {
                           noteText = "⚠️ Peringatan: Telat Bayar!";
-                          noteColor = "#DC2626"; // Merah
+                          noteColor = "#DC2626"; 
                       }
                   } else {
                       noteText = `⚠️ Peringatan: Telat Bayar ${crm.nunggak} Bulan!`;
-                      noteColor = "#DC2626"; // Merah
+                      noteColor = "#DC2626"; 
                   }
 
                   return (
