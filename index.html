@@ -37,7 +37,7 @@
   const { useState, useEffect, useMemo } = React;
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v30"; // Memaksa hapus cache di HP staf
+  const STORAGE_KEY = "morabilling-pro-v31"; 
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
@@ -56,7 +56,6 @@
     return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`;
   };
 
-  // KECERDASAN LEDGER & ANTI-BUG AKHIR BULAN
   const getCRMStats = (p) => {
     if (!p.joinDate) return { usia: 1, bayar: 0, nunggak: 0, tglTerbit: 1 };
     const d = new Date(p.joinDate);
@@ -69,7 +68,6 @@
     const today = getNow();
     let usia = (today.getFullYear() - startY) * 12 + (today.getMonth() - startM);
     
-    // Fitur Cerdas: Capping Tgl Terbit di bulan ini (Mencegah bug tanggal 31 di bulan Feb)
     const maxDaysThisMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const effectiveTglTerbit = Math.min(tglTerbit, maxDaysThisMonth);
     
@@ -107,15 +105,36 @@
     return { phase: "normal", label: `Aman. Rilis ${daysToNext} hari lagi`, color: "#059669", bg: "#ECFDF5", urgent: false };
   };
 
+  // FORMAT WHATSAPP SESUAI REQUEST GAMBAR
   const buildWALink = (p, crm) => {
     const phone = cleanPhone(p.noWa);
     const multiplier = crm.nunggak > 0 ? crm.nunggak : 1;
     const nominal = p.tagihan * multiplier;
     
-    let statusText = "Bulan Ini";
-    if (crm.nunggak > 1) { statusText = `${crm.nunggak} Bulan`; }
+    const today = getNow();
+    const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const currentMonthName = months[today.getMonth()];
     
-    const msgText = `Halo *Kak ${p.nama}* 👋\n\nMengingatkan tagihan WiFi MyRepublic ID *${p.customerId}* Anda.\n\nTotal Tagihan : *${formatRupiah(nominal)}* (${statusText})\n\nMohon segera melakukan pembayaran agar layanan tetap aktif ya Kak 😊\nTerima kasih! 🙏`;
+    // Perhitungan Jatuh Tempo
+    const maxDaysThisMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const effectiveTglTerbit = Math.min(crm.tglTerbit, maxDaysThisMonth);
+    let jtDate = effectiveTglTerbit + HARI_TEMPO;
+    let jtMonthName = currentMonthName;
+    
+    if (jtDate > maxDaysThisMonth) {
+        jtDate = jtDate - maxDaysThisMonth;
+        let nextMonthIndex = today.getMonth() + 1;
+        if (nextMonthIndex > 11) nextMonthIndex = 0; // Jika Desember, maju ke Januari
+        jtMonthName = months[nextMonthIndex];
+    }
+    
+    let infoBulan = "";
+    if (crm.nunggak > 1) {
+        infoBulan = ` (${crm.nunggak} Bulan)`;
+    }
+
+    const msgText = `Halo *Kak ${p.nama}* 👋\nMau mengingatkan kembali untuk tagihan WiFi MyRepublic bulan ${currentMonthName} sudah terbit 🙏\n\nNama\t\t: *${p.nama}*\nID Pelanggan\t: *${p.customerId}*\nTotal\t\t: *${formatRupiah(nominal)}${infoBulan}*\nJatuh Tempo\t: *Tgl ${jtDate} ${jtMonthName}*\n\nMohon segera melakukan pembayaran sebelum jatuh tempo agar layanan tidak terputus ya Kak 😊\nTerima kasih! 🙏`;
+    
     return `https://wa.me/${phone}?text=${encodeURIComponent(msgText)}`;
   };
 
@@ -179,11 +198,9 @@
 
       if (errs.length > 0) { setErrorFields(errs); setErrorMsg("Mohon lengkapi kotak merah."); return; }
       
-      // AUTO-PARSE: Menarik tgl terbit dari kalender input HTML (YYYY-MM-DD)
       const parts = form.joinDate.split("-");
       const terbit = parseInt(parts[2], 10);
       
-      // VALIDASI: Cegah paidCycle tersimpan sebagai NaN jika dikosongkan manual
       const paidCycleInt = parseInt(form.paidCycle, 10);
       
       onSave({...form, paidCycle: isNaN(paidCycleInt) ? 0 : paidCycleInt, nama: toTitleCase(form.nama.trim()), tanggalTerbit: terbit});
@@ -287,8 +304,6 @@
 
     const handleSave = (data) => {
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
-      
-      // BUG KILLER: Murni menggunakan data.joinDate tanpa meng-overwrite dengan string kosong
       const dataToSave = { ...data, statusKlien: data.statusKlien || "Aktif", paidCycle: data.paidCycle || 0 };
       const isEdit = !!data.id;
       const updated = isEdit ? pelanggan.map(p => p.id === dataToSave.id ? dataToSave : p) : [...pelanggan, { ...dataToSave, id: String(Date.now()) }];
