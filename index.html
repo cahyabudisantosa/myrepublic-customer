@@ -38,8 +38,8 @@
 
   // ===== KONFIGURASI UTAMA SISTEM =====
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v23"; // Reset otomatis cache versi lama
-  const PIN_RAHASIA = "1234"; // PIN diperbarui sesuai instruksi
+  const STORAGE_KEY = "morabilling-pro-v24"; // Reset otomatis cache versi lama
+  const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
   const vibe = () => { if (navigator.vibrate) navigator.vibrate(40); };
@@ -93,7 +93,7 @@
        if(crm.nunggak === 1 && today < jatuhTempoBulanIni && today >= terbitBulanIni) {
            return { phase: "aktif", label: `JT ${Math.ceil((jatuhTempoBulanIni - today) / 86400000)} hari lagi`, color: "#D97706", bg: "#FFFBEB", urgent: false };
        }
-       return { phase: "lewat", label: `Nunggak ${crm.nunggak} Bulan!`, color: "#DC2626", bg: "#FEF2F2", urgent: true };
+       return { phase: "lewat", label: `Tagihan ${crm.nunggak} Bulan!`, color: "#DC2626", bg: "#FEF2F2", urgent: true };
     }
 
     const nextTerbit = new Date(terbitBulanIni);
@@ -102,13 +102,6 @@
     }
     const daysToNext = Math.ceil((nextTerbit - today) / 86400000);
     return { phase: "normal", label: `Aman. Rilis ${daysToNext} hari lagi`, color: "#059669", bg: "#ECFDF5", urgent: false };
-  };
-
-  const getCycleBadgeStyle = (usia) => {
-    if (usia >= 1 && usia <= 3) return { bg: "#EFF6FF", color: "#1D4ED8", label: `Usia ${usia} Bln (Baru)` };
-    if (usia >= 4 && usia <= 6) return { bg: "#E6F4EA", color: "#137333", label: `Usia ${usia} Bln (Aman)` };
-    if (usia >= 7 && usia <= 12) return { bg: "#FEF3C7", color: "#B45309", label: `Usia ${usia} Bln (Setia)` };
-    return { bg: "#F3F4F6", color: "#4B5563", label: `Usia ${usia} Bln (VIP)` };
   };
 
   const buildWALink = (p, crm) => {
@@ -120,7 +113,7 @@
   };
 
   const exportToCSV = (data) => {
-    const headers = ["ID Pelanggan", "Nama", "No WA", "Tagihan Bulanan", "Tanggal Pasang", "Usia Berlangganan (Bulan)", "Total Bayar (Bulan)", "Tunggakan (Bulan)", "Status Klien", "Catatan"];
+    const headers = ["ID Pelanggan", "Nama", "No WA", "Tagihan Bulanan", "Tanggal Pasang", "Usia Berlangganan (Bulan)", "Total Bayar (Bulan)", "Tagihan (Bulan)", "Status Pelanggan", "Catatan"];
     const rows = data.map(p => {
       const crm = getCRMStats(p);
       return [p.customerId, p.nama, p.noWa, p.tagihan, p.joinDate, crm.usia, crm.bayar, crm.nunggak, p.statusKlien, `"${(p.catatan || "").replace(/"/g, '""')}"`];
@@ -144,7 +137,7 @@
         <div style={{ background: "white", padding: 30, borderRadius: 24, width: "100%", maxWidth: 360, textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>[+]</div>
           <h2 style={{ margin: "0 0 5px", color: "#111827", fontWeight: 800 }}>MoraBilling</h2>
-          <p style={{ margin: "0 0 20px", color: "#6B7280", fontSize: 13, fontWeight: 500 }}>Sistem Ledger Tagihan Pelanggan.</p>
+          <p style={{ margin: "0 0 20px", color: "#6B7280", fontSize: 13, fontWeight: 500 }}>Sistem Customer Management.</p>
           <input type="password" value={pin} onChange={(e) => {
               vibe(); const num = e.target.value.replace(/\D/g, ""); setPin(num);
               if (num.length === 4) { if (num === PIN_RAHASIA) setTimeout(onLogin, 200); else { setError(true); setTimeout(() => { setError(false); setPin(""); }, 800); } }
@@ -287,7 +280,7 @@
     const catatBayar = (p) => {
       vibe();
       const crm = getCRMStats(p);
-      if (crm.nunggak === 0) return; // Proteksi ganda di frontend
+      if (crm.nunggak === 0) return; 
       
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
       const currentBayar = parseInt(p.paidCycle, 10) || 0;
@@ -341,13 +334,11 @@
         if (filter === "lunas") return crm.nunggak === 0;
         if (filter === "belum") return crm.nunggak > 0;
         
-        // Logika Dropdown Filter Usia Pelanggan
         if (filter === "c1") return crm.usia >= 1 && crm.usia <= 3;
         if (filter === "c4") return crm.usia >= 4 && crm.usia <= 6;
         if (filter === "c7") return crm.usia >= 7 && crm.usia <= 12;
         if (filter === "c12") return crm.usia > 12;
 
-        // Logika Dropdown Filter Total Bayar Pelanggan (0-3, 4-6, 7-12, 12+)
         if (filter === "b0") return crm.bayar >= 0 && crm.bayar <= 3;
         if (filter === "b4") return crm.bayar >= 4 && crm.bayar <= 6;
         if (filter === "b7") return crm.bayar >= 7 && crm.bayar <= 12;
@@ -371,7 +362,7 @@
         <div style={{ background: "linear-gradient(160deg, #5B21B6, #4C1D95)", padding: "24px 20px 30px", color: "white", borderBottomLeftRadius: 24, borderBottomRightRadius: 24, boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <div>
-              <div style={{ fontSize: 11, letterSpacing: 2, opacity: 0.7, textTransform: "uppercase", fontWeight: 700 }}>Ledger Penagihan</div>
+              <div style={{ fontSize: 11, letterSpacing: 2, opacity: 0.7, textTransform: "uppercase", fontWeight: 700 }}>Customer Management</div>
               <div style={{ fontSize: 24, fontWeight: 800 }}>MoraBilling</div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
@@ -381,7 +372,7 @@
           </div>
 
           <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 16, padding: 15 }}>
-            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 15 }}>Status Klien Aktif ({stats.total} ID)</div>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 15 }}>Status Pelanggan Aktif ({stats.total} ID)</div>
             <div style={{ display: "flex", gap: 10 }}>
               <div style={{ flex: 1, background: "rgba(16, 185, 129, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#34D399" }}>{stats.lunas}</div>
@@ -389,7 +380,7 @@
               </div>
               <div style={{ flex: 1, background: "rgba(239, 68, 68, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#FCA5A5" }}>{stats.belum}</div>
-                <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4, fontWeight: 600 }}>Ada Tunggakan</div>
+                <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4, fontWeight: 600 }}>Ada Tagihan</div>
               </div>
             </div>
           </div>
@@ -401,16 +392,14 @@
             {search && <button onClick={() => {vibe(); setSearch("");}} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", background: "#F3F4F6", color: "#6B7280", border: "none", fontSize: 12, fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>}
           </div>
           
-          {/* Filter Bar Utama */}
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, width: "100%" }}>
             {[
-              ['semua', 'Semua Aktif'], ['belum', 'Ada Tunggakan'], ['lunas', 'Lunas Semua'], ['putus', 'Putus / Churn']
+              ['semua', 'Semua Aktif'], ['belum', 'Ada Tagihan'], ['lunas', 'Lunas Semua'], ['putus', 'Putus / Churn']
             ].map(([v, l]) => (
               <button key={v} onClick={() => {vibe(); setFilter(v);}} style={{ padding: "6px 14px", borderRadius: 20, border: "1px solid #E5E7EB", fontSize: 12, fontWeight: 700, background: filter === v ? "#111827" : "white", color: filter === v ? "white" : "#6B7280", whiteSpace: "nowrap", transition: "0.2s" }}>{l}</button>
             ))}
           </div>
 
-          {/* BARIS DROPDOWN FILTER BARU (USIA & TOTAL BAYAR) */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4, paddingBottom: 4 }}>
             <select 
               value={['c1','c4','c7','c12'].includes(filter) ? filter : ""} 
@@ -446,7 +435,7 @@
             <div style={{ background: "white", borderRadius: 16, padding: "40px 20px", textAlign: "center", border: "1px dashed #D1D5DB" }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>{filter === "belum" ? "🎉" : "🔍"}</div>
               <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{filter === "belum" ? "Semua Tagihan Aman!" : "Data tidak ditemukan"}</div>
-              <div style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>{filter === "belum" ? "Kerja bagus! Tidak ada klien aktif yang menunggak." : "Coba bersihkan filter dropdown atau ketik nama lain."}</div>
+              <div style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>{filter === "belum" ? "Kerja bagus! Tidak ada pelanggan aktif yang memiliki tagihan." : "Coba bersihkan filter dropdown atau ketik nama lain."}</div>
             </div>
            ) :
            filtered.map(p => {
@@ -476,7 +465,7 @@
                    <span style={{ background: "#F3F4F6", color: "#374151", padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700 }}>Usia: {crm.usia} Bulan</span>
                    <span style={{ background: crm.bayar === 0 ? "#F3F4F6" : "#ECFDF5", color: crm.bayar === 0 ? "#6B7280" : "#059669", padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700 }}>Total Bayar: {crm.bayar}x</span>
                    {crm.nunggak > 0 && !isPutus && (
-                     <span style={{ background: "#FEF2F2", color: "#DC2626", padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800 }}>Nunggak {crm.nunggak} Bulan</span>
+                     <span style={{ background: "#FEF2F2", color: "#DC2626", padding: "4px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800 }}>Tagihan {crm.nunggak} Bulan</span>
                    )}
                 </div>
 
@@ -495,7 +484,6 @@
                       <div style={{ display: "flex", flex: 1, gap: 4 }}>
                         <button onClick={() => batalBayar(p)} style={{ flex: 0.3, background: "#FEF2F2", color: "#DC2626", border: "none", borderRadius: 10, fontSize: 16, fontWeight: 800 }}>-</button>
                         
-                        {/* PERBAIKAN POIN 2: Menonaktifkan tombol secara total saat nunggak = 0 */}
                         <button 
                           onClick={() => catatBayar(p)} 
                           disabled={crm.nunggak === 0} 
