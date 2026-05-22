@@ -37,7 +37,7 @@
   const { useState, useEffect, useMemo } = React;
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v31"; 
+  const STORAGE_KEY = "morabilling-pro-v32"; // Cache refresh otomatis ke versi 32
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
@@ -105,7 +105,7 @@
     return { phase: "normal", label: `Aman. Rilis ${daysToNext} hari lagi`, color: "#059669", bg: "#ECFDF5", urgent: false };
   };
 
-  // FORMAT WHATSAPP SESUAI REQUEST GAMBAR
+  // ===== OPTIMASI SCRIPT WHATSAPP 100% PERSIS CONTOH REFERENSI =====
   const buildWALink = (p, crm) => {
     const phone = cleanPhone(p.noWa);
     const multiplier = crm.nunggak > 0 ? crm.nunggak : 1;
@@ -115,16 +115,21 @@
     const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
     const currentMonthName = months[today.getMonth()];
     
-    // Perhitungan Jatuh Tempo
+    // Perhitungan Tanggal, Bulan, dan Tahun Jatuh Tempo
     const maxDaysThisMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const effectiveTglTerbit = Math.min(crm.tglTerbit, maxDaysThisMonth);
+    
     let jtDate = effectiveTglTerbit + HARI_TEMPO;
     let jtMonthName = currentMonthName;
+    let jtYear = today.getFullYear();
     
     if (jtDate > maxDaysThisMonth) {
         jtDate = jtDate - maxDaysThisMonth;
         let nextMonthIndex = today.getMonth() + 1;
-        if (nextMonthIndex > 11) nextMonthIndex = 0; // Jika Desember, maju ke Januari
+        if (nextMonthIndex > 11) {
+            nextMonthIndex = 0;
+            jtYear += 1;
+        }
         jtMonthName = months[nextMonthIndex];
     }
     
@@ -133,7 +138,8 @@
         infoBulan = ` (${crm.nunggak} Bulan)`;
     }
 
-    const msgText = `Halo *Kak ${p.nama}* 👋\nMau mengingatkan kembali untuk tagihan WiFi MyRepublic bulan ${currentMonthName} sudah terbit 🙏\n\nNama\t\t: *${p.nama}*\nID Pelanggan\t: *${p.customerId}*\nTotal\t\t: *${formatRupiah(nominal)}${infoBulan}*\nJatuh Tempo\t: *Tgl ${jtDate} ${jtMonthName}*\n\nMohon segera melakukan pembayaran sebelum jatuh tempo agar layanan tidak terputus ya Kak 😊\nTerima kasih! 🙏`;
+    // Konstruksi Teks dengan layout, spasi perataan kolom, emoji, dan baris baru yang sama persis
+    const msgText = `Halo *Kak ${p.nama}*👋\nMau mengingatkan tagihan WiFi MyRepublic bulan ${currentMonthName} ${today.getFullYear()} sudah terbit✨\n\nID Pelanggan : *${p.customerId}*\nTotal                : *${formatRupiah(nominal)}${infoBulan}*\nJatuh Tempo  : *${jtDate} ${jtMonthName} ${jtYear}*\n\nMohon segera melakukan pembayaran sebelum jatuh tempo agar layanan tidak terputus ya Kak\n\nApabila ada kendala harap segera menghubungi/komunikasi dengan Cahyo.\n\nTerima kasih😊🙏🏻`;
     
     return `https://wa.me/${phone}?text=${encodeURIComponent(msgText)}`;
   };
@@ -200,7 +206,6 @@
       
       const parts = form.joinDate.split("-");
       const terbit = parseInt(parts[2], 10);
-      
       const paidCycleInt = parseInt(form.paidCycle, 10);
       
       onSave({...form, paidCycle: isNaN(paidCycleInt) ? 0 : paidCycleInt, nama: toTitleCase(form.nama.trim()), tanggalTerbit: terbit});
@@ -468,7 +473,7 @@
 
         <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 12 }}>
           {loading && pelanggan.length === 0 ? (
-            <React.Fragment><SkeletonLoader /><SkeletonLoader /><SkeletonLoader /></React.Fragment>
+            <React.Fragment><SkeletonLoader /><SkeletonLoader /></React.Fragment>
           ) : 
            filtered.length === 0 ? (
             <div style={{ background: "white", borderRadius: 16, padding: "40px 20px", textAlign: "center", border: "1px dashed #D1D5DB" }}>
