@@ -37,7 +37,7 @@
   const { useState, useEffect, useMemo } = React;
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v21"; // Key baru agar wajib clear cache lokal
+  const STORAGE_KEY = "morabilling-pro-v22"; // Key baru agar cache direfresh otomatis
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
@@ -55,7 +55,7 @@
     return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`;
   };
 
-  // KECERDASAN LEDGER (SISTEM AKUNTANSI BILLING)
+  // ===== KECERDASAN LEDGER (SISTEM AKUNTANSI BILLING) =====
   const getCRMStats = (p) => {
     if (!p.joinDate) return { usia: 1, bayar: 0, nunggak: 0, tglTerbit: 1 };
     const d = new Date(p.joinDate);
@@ -67,15 +67,12 @@
     
     const today = getNow();
     let usia = (today.getFullYear() - startY) * 12 + (today.getMonth() - startM);
-    // Usia bertambah 1 setiap melewati Tgl Terbit di bulan berjalan
     if (today.getDate() >= tglTerbit) { usia += 1; }
-    usia = Math.max(1, usia); // Minimal usia 1 bulan saat pasang
+    usia = Math.max(1, usia); 
     
-    // Total Bayar diambil dari paidCycle (sekarang isinya angka/integer)
     let bayar = parseInt(p.paidCycle, 10);
     if (isNaN(bayar)) bayar = 0;
     
-    // Status Tunggakan
     const nunggak = Math.max(0, usia - bayar);
     
     return { usia, bayar, nunggak, tglTerbit };
@@ -87,15 +84,19 @@
     const today = getNow();
     today.setHours(0, 0, 0, 0);
     
-    // Cari Tgl Terbit di bulan berjalan
-    const terbitBulanIni = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit);
+    // Validasi agar tanggal tidak error
+    const validTglTerbit = (crm && crm.tglTerbit) ? crm.tglTerbit : 1;
+    const terbitBulanIni = new Date(today.getFullYear(), today.getMonth(), validTglTerbit);
+    const jatuhTempoBulanIni = new Date(today.getFullYear(), today.getMonth(), validTglTerbit + HARI_TEMPO);
     
-    // Jika nunggak, dia pasti sudah melewati jatuh tempo siklus-siklus sebelumnya
     if (crm.nunggak > 0) {
+       // Jika masih di bulan yang sama namun sudah lewat jatuh tempo
+       if(crm.nunggak === 1 && today < jatuhTempoBulanIni && today >= terbitBulanIni) {
+           return { phase: "aktif", label: `JT ${Math.ceil((jatuhTempoBulanIni - today) / 86400000)} hari lagi`, color: "#D97706", bg: "#FFFBEB", urgent: false };
+       }
        return { phase: "lewat", label: `Nunggak ${crm.nunggak} Bulan!`, color: "#DC2626", bg: "#FEF2F2", urgent: true };
     }
 
-    // Jika lunas (nunggak 0), cari kapan terbit berikutnya
     const nextTerbit = new Date(terbitBulanIni);
     if (today >= terbitBulanIni) {
        nextTerbit.setMonth(nextTerbit.getMonth() + 1);
@@ -105,15 +106,16 @@
   };
 
   const getCycleBadgeStyle = (usia) => {
-    if (usia >= 1 && usia <= 3) return { bg: "#EFF6FF", color: "#1D4ED8", label: `Siklus ${usia} (Baru)` };
-    if (usia >= 4 && usia <= 6) return { bg: "#E6F4EA", color: "#137333", label: `Siklus ${usia} (Aman)` };
-    if (usia >= 7 && usia <= 12) return { bg: "#FEF3C7", color: "#B45309", label: `Siklus ${usia} (Setia)` };
-    return { bg: "#F3F4F6", color: "#4B5563", label: `Siklus ${usia} (VIP)` };
+    if (usia >= 1 && usia <= 3) return { bg: "#EFF6FF", color: "#1D4ED8", label: `Usia ${usia} Bln (Baru)` };
+    if (usia >= 4 && usia <= 6) return { bg: "#E6F4EA", color: "#137333", label: `Usia ${usia} Bln (Aman)` };
+    if (usia >= 7 && usia <= 12) return { bg: "#FEF3C7", color: "#B45309", label: `Usia ${usia} Bln (Setia)` };
+    return { bg: "#F3F4F6", color: "#4B5563", label: `Usia ${usia} Bln (VIP)` };
   };
 
   const buildWALink = (p, crm) => {
     const phone = cleanPhone(p.noWa);
-    const nominal = p.tagihan * (crm.nunggak > 0 ? crm.nunggak : 1);
+    const multiplier = crm.nunggak > 0 ? crm.nunggak : 1;
+    const nominal = p.tagihan * multiplier;
     const msgText = `Halo *Kak ${p.nama}* 👋\n\nMengingatkan tagihan WiFi MyRepublic ID *${p.customerId}* Anda.\n\nTotal Tagihan : *${formatRupiah(nominal)}* (${crm.nunggak > 0 ? crm.nunggak + ' Bulan' : 'Bulan Ini'})\n\nMohon segera melakukan pembayaran agar layanan tetap aktif ya Kak 😊\nTerima kasih! 🙏`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msgText)}`;
   };
@@ -170,13 +172,12 @@
       if (!form.customerId.trim()) errs.push("customerId");
       if (!form.nama.trim()) errs.push("nama");
       if (!form.tagihan) errs.push("tagihan");
-      if (!form.joinDate) errs.push("joinDate"); // Tanggal Pasang wajib
+      if (!form.joinDate) errs.push("joinDate"); 
 
       if (errs.length > 0) {
-        setErrorFields(errs); setErrorMsg("Mohon lengkapi semua kotak merah."); return;
+        setErrorFields(errs); setErrorMsg("Mohon lengkapi kotak merah."); return;
       }
       
-      // Auto-derive Tanggal Terbit dari Tanggal Pasang
       const tglPsg = new Date(form.joinDate);
       const terbit = tglPsg.getDate();
       
@@ -216,7 +217,7 @@
         </div>
         
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: "#F3F4F6", padding: 12, borderRadius: 12, marginBottom: 12 }}>
-          <div><label style={labelStyle}>Tanggal Pasang *</label><input style={{...getInputStyle("joinDate"), marginBottom:0}} type="date" value={form.joinDate} onChange={e => setForm({...form, joinDate: e.target.value})} /></div>
+          <div><label style={labelStyle}>Tgl Pasang *</label><input style={{...getInputStyle("joinDate"), marginBottom:0}} type="date" value={form.joinDate} onChange={e => setForm({...form, joinDate: e.target.value})} /></div>
           <div><label style={labelStyle}>Total Bulan Terbayar</label><input style={{...getInputStyle("paidCycle"), marginBottom:0, fontWeight:800}} type="number" min="0" value={form.paidCycle} onChange={e => setForm({...form, paidCycle: e.target.value})} /></div>
         </div>
 
@@ -299,6 +300,18 @@
       handleAPI(updated, "Pembayaran 1 Bulan Dicatat!");
     };
 
+    const batalBayar = (p) => {
+      vibe();
+      if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
+      const currentBayar = parseInt(p.paidCycle, 10) || 0;
+      if (currentBayar <= 0) return;
+      if (!window.confirm(`Batalkan 1x pembayaran untuk ${p.nama}?`)) return;
+      const updatedP = { ...p, paidCycle: currentBayar - 1 };
+      const updated = pelanggan.map(x => x.id === p.id ? updatedP : x);
+      setPelanggan(updated);
+      handleAPI(updated, "Pembayaran Dibatalkan!");
+    };
+
     const handleDelete = (id) => {
       if (!navigator.onLine) { showMsg("Gagal hapus. Koneksi Offline!", "error"); return; }
       if(!window.confirm("Hapus data ini permanen?")) return;
@@ -325,7 +338,7 @@
         if (!m) return false;
 
         if (filter === "putus") return p.statusKlien === "Putus";
-        if (p.statusKlien === "Putus") return false; // Sembunyikan yg putus dari filter lain
+        if (p.statusKlien === "Putus") return false; 
 
         const crm = getCRMStats(p);
         if (filter === "lunas") return crm.nunggak === 0;
@@ -339,11 +352,15 @@
         return true;
       }).sort((a, b) => {
         const aCrm = getCRMStats(a); const bCrm = getCRMStats(b);
-        // Urutkan berdasar jumlah tunggakan terbanyak lebih dulu
-        if(aCrm.nunggak !== bCrm.nunggak) return bCrm.nunggak - aCrm.nunggak;
+        
+        // Prioritaskan yang Nunggaknya paling banyak
+        if (aCrm.nunggak !== bCrm.nunggak) return bCrm.nunggak - aCrm.nunggak;
+        
         const aU = aCrm.nunggak > 0 && ["terbit", "aktif", "lewat"].includes(getBillingPhase(a, aCrm).phase);
         const bU = bCrm.nunggak > 0 && ["terbit", "aktif", "lewat"].includes(getBillingPhase(b, bCrm).phase);
-        return aU !== bU ? (aU ? -1 : 1) : getDaysUntilTerbit(a.tanggalTerbit) - getDaysUntilTerbit(b.tanggalTerbit);
+        if (aU !== bU) return aU ? -1 : 1;
+        
+        return aCrm.tglTerbit - bCrm.tglTerbit;
       });
     }, [pelanggan, filter, search]);
 
@@ -372,7 +389,7 @@
               </div>
               <div style={{ flex: 1, background: "rgba(239, 68, 68, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#FCA5A5" }}>{stats.belum}</div>
-                <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4, fontWeight: 600 }}>Terdapat Tunggakan</div>
+                <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4, fontWeight: 600 }}>Ada Tunggakan</div>
               </div>
             </div>
           </div>
@@ -386,7 +403,7 @@
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 5, width: "100%" }}>
               {[
-                ['semua', 'Semua Aktif'], ['belum', 'Terdapat Tunggakan'], ['lunas', 'Lunas Semua'],
+                ['semua', 'Semua Aktif'], ['belum', 'Ada Tunggakan'], ['lunas', 'Lunas Semua'],
                 ['putus', 'Putus / Churn'], ['c1', 'Usia 1-3 Bln'], ['c4', 'Usia 4-6 Bln'], ['c7', 'Usia 7-12 Bln'], ['c12', 'Usia 12+ Bln']
               ].map(([v, l]) => (
                 <button key={v} onClick={() => {vibe(); setFilter(v);}} style={{ padding: "6px 14px", borderRadius: 20, border: "1px solid #E5E7EB", fontSize: 12, fontWeight: 700, background: filter === v ? "#111827" : "white", color: filter === v ? "white" : "#6B7280", whiteSpace: "nowrap", transition: "0.2s" }}>{l}</button>
@@ -441,18 +458,22 @@
                 {p.catatan && <div style={{ fontSize: 11, color: "#4B5563", marginTop: 10, padding: "8px 12px", background: "#FFFBEB", borderLeft: "2px solid #D97706", borderRadius: 4, fontWeight: 500 }}>Catatan: {p.catatan}</div>}
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px dashed #E5E7EB" }}>
-                  <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 500 }}>Tagihan terbit tgl <b style={{color:"#111827"}}>{crm.tglTerbit}</b> setiap bulan</div>
+                  <div style={{ fontSize: 11, color: "#6B7280", fontWeight: 500 }}>Terbit Tgl <b style={{color:"#111827"}}>{crm.tglTerbit}</b> setiap bulan</div>
                   {!isPutus && crm.nunggak === 0 && <span style={{ background: status.bg, color: status.color, padding: "4px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800 }}>{status.label}</span>}
                 </div>
 
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                   {!isPutus && (
                     <React.Fragment>
-                      <a onClick={()=>vibe()} href={buildWALink(p, crm)} target="_blank" style={{ flex: 1, background: (status.urgent || crm.nunggak > 0) ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>WA Reminder</a>
-                      <button onClick={() => catatBayar(p)} style={{ flex: 1, background: crm.nunggak === 0 ? "#F3F4F6" : "#ECFDF5", color: crm.nunggak === 0 ? "#9CA3AF" : "#059669", border: "none", borderRadius: 10, padding: "10px", fontSize: 13, fontWeight: 700 }}>+ Catat Bayar</button>
+                      <a onClick={()=>vibe()} href={buildWALink(p, crm)} target="_blank" style={{ flex: 1, background: (status.urgent || crm.nunggak > 0) ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>WA Reminder</a>
+                      
+                      <div style={{ display: "flex", flex: 1, gap: 4 }}>
+                        <button onClick={() => batalBayar(p)} style={{ flex: 0.3, background: "#FEF2F2", color: "#DC2626", border: "none", borderRadius: 10, fontSize: 16, fontWeight: 800 }}>-</button>
+                        <button onClick={() => catatBayar(p)} style={{ flex: 1, background: crm.nunggak === 0 ? "#F3F4F6" : "#ECFDF5", color: crm.nunggak === 0 ? "#9CA3AF" : "#059669", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700 }}>+ Bayar</button>
+                      </div>
                     </React.Fragment>
                   )}
-                  <button onClick={() => { vibe(); setEditItem({...p}); setShowForm(true); }} style={{ flex: isPutus ? 1 : "unset", padding: "10px 16px", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, color: "#374151", fontWeight: 700 }}>Edit {isPutus ? "Data" : ""}</button>
+                  <button onClick={() => { vibe(); setEditItem({...p}); setShowForm(true); }} style={{ flex: isPutus ? 1 : 0.6, padding: "10px", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, color: "#374151", fontWeight: 700 }}>Edit</button>
                 </div>
               </div>
             );
