@@ -37,7 +37,7 @@
   const { useState, useEffect, useMemo } = React;
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v28"; // Memaksa cache clear agar bug hilang total
+  const STORAGE_KEY = "morabilling-pro-v30"; // Memaksa hapus cache di HP staf
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
@@ -56,8 +56,8 @@
     return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`;
   };
 
+  // KECERDASAN LEDGER & ANTI-BUG AKHIR BULAN
   const getCRMStats = (p) => {
-    // Validasi super ketat agar tidak error jika joinDate bermasalah
     if (!p.joinDate) return { usia: 1, bayar: 0, nunggak: 0, tglTerbit: 1 };
     const d = new Date(p.joinDate);
     if (isNaN(d.getTime())) return { usia: 1, bayar: 0, nunggak: 0, tglTerbit: 1 };
@@ -68,15 +68,19 @@
     
     const today = getNow();
     let usia = (today.getFullYear() - startY) * 12 + (today.getMonth() - startM);
-    if (today.getDate() >= tglTerbit) { usia += 1; }
+    
+    // Fitur Cerdas: Capping Tgl Terbit di bulan ini (Mencegah bug tanggal 31 di bulan Feb)
+    const maxDaysThisMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const effectiveTglTerbit = Math.min(tglTerbit, maxDaysThisMonth);
+    
+    if (today.getDate() >= effectiveTglTerbit) { usia += 1; }
     usia = Math.max(1, usia); 
     
     let bayar = parseInt(p.paidCycle, 10);
     if (isNaN(bayar)) bayar = 0;
     
     const nunggak = Math.max(0, usia - bayar);
-    
-    return { usia, bayar, nunggak, tglTerbit };
+    return { usia, bayar, nunggak, tglTerbit: effectiveTglTerbit };
   };
 
   const getBillingPhase = (p, crm) => {
@@ -85,9 +89,8 @@
     const today = getNow();
     today.setHours(0, 0, 0, 0);
     
-    const validTglTerbit = (crm && crm.tglTerbit) ? crm.tglTerbit : 1;
-    const terbitBulanIni = new Date(today.getFullYear(), today.getMonth(), validTglTerbit);
-    const jatuhTempoBulanIni = new Date(today.getFullYear(), today.getMonth(), validTglTerbit + HARI_TEMPO);
+    const terbitBulanIni = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit);
+    const jatuhTempoBulanIni = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit + HARI_TEMPO);
     
     if (crm.nunggak > 0) {
        if(crm.nunggak === 1 && today <= jatuhTempoBulanIni && today >= terbitBulanIni) {
@@ -176,10 +179,14 @@
 
       if (errs.length > 0) { setErrorFields(errs); setErrorMsg("Mohon lengkapi kotak merah."); return; }
       
+      // AUTO-PARSE: Menarik tgl terbit dari kalender input HTML (YYYY-MM-DD)
       const parts = form.joinDate.split("-");
-      const terbit = parseInt(parts[2], 10); // Menarik hari (tgl) dari format YYYY-MM-DD
+      const terbit = parseInt(parts[2], 10);
       
-      onSave({...form, nama: toTitleCase(form.nama.trim()), tanggalTerbit: terbit});
+      // VALIDASI: Cegah paidCycle tersimpan sebagai NaN jika dikosongkan manual
+      const paidCycleInt = parseInt(form.paidCycle, 10);
+      
+      onSave({...form, paidCycle: isNaN(paidCycleInt) ? 0 : paidCycleInt, nama: toTitleCase(form.nama.trim()), tanggalTerbit: terbit});
     }
 
     return (
@@ -281,7 +288,7 @@
     const handleSave = (data) => {
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
       
-      // PERBAIKAN BUG: langsung menggunakan joinDate murni tanpa embel-embel "-01" lagi
+      // BUG KILLER: Murni menggunakan data.joinDate tanpa meng-overwrite dengan string kosong
       const dataToSave = { ...data, statusKlien: data.statusKlien || "Aktif", paidCycle: data.paidCycle || 0 };
       const isEdit = !!data.id;
       const updated = isEdit ? pelanggan.map(p => p.id === dataToSave.id ? dataToSave : p) : [...pelanggan, { ...dataToSave, id: String(Date.now()) }];
@@ -308,7 +315,7 @@
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
       const currentBayar = parseInt(p.paidCycle, 10) || 0;
       if (currentBayar <= 0) return;
-      if (!window.confirm(`Batalkan 1x pembayaran untuk ${p.nama}?`)) return;
+      if (!window.confirm(`Batalkan 1x pembayaran untuk ${p.nama}? (Status tagihan akan bertambah 1 bulan)`)) return;
       const updatedP = { ...p, paidCycle: currentBayar - 1 };
       const updated = pelanggan.map(x => x.id === p.id ? updatedP : x);
       setPelanggan(updated);
@@ -498,6 +505,7 @@
                   
                   const today = getNow();
                   today.setHours(0, 0, 0, 0);
+                  
                   const jtDate = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit + HARI_TEMPO);
                   const tglTerbitDate = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit);
                   
@@ -535,7 +543,22 @@
                       <a onClick={()=>vibe()} href={buildWALink(p, crm)} target="_blank" style={{ flex: 1, background: (status.urgent || crm.nunggak > 0) ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>WA Reminder</a>
                       
                       <div style={{ display: "flex", flex: 1, gap: 4 }}>
-                        <button onClick={() => batalBayar(p)} style={{ flex: 0.3, background: "#FEF2F2", color: "#DC2626", border: "1px solid #FCA5A5", borderRadius: 10, fontSize: 16, fontWeight: 800 }}>-</button>
+                        <button 
+                          onClick={() => batalBayar(p)} 
+                          disabled={crm.bayar <= 0}
+                          style={{ 
+                            flex: 0.3, 
+                            background: crm.bayar <= 0 ? "#F9FAFB" : "#FEF2F2", 
+                            color: crm.bayar <= 0 ? "#D1D5DB" : "#DC2626", 
+                            border: crm.bayar <= 0 ? "1px solid #F3F4F6" : "1px solid #FCA5A5", 
+                            borderRadius: 10, 
+                            fontSize: 16, 
+                            fontWeight: 800,
+                            cursor: crm.bayar <= 0 ? "not-allowed" : "pointer"
+                          }}
+                        >
+                          -
+                        </button>
                         
                         <button 
                           onClick={() => catatBayar(p)} 
