@@ -37,7 +37,7 @@
   const { useState, useEffect, useMemo } = React;
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v26"; 
+  const STORAGE_KEY = "morabilling-pro-v27"; 
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
@@ -67,9 +67,8 @@
     
     const today = getNow();
     let usia = (today.getFullYear() - startY) * 12 + (today.getMonth() - startM);
-    
-    // Perbaikan Bug: Jika hari ini sudah lewat tgl terbit, tambah 1 bulan tagihan
     if (today.getDate() >= tglTerbit) { usia += 1; }
+    usia = Math.max(1, usia); 
     
     let bayar = parseInt(p.paidCycle, 10);
     if (isNaN(bayar)) bayar = 0;
@@ -90,7 +89,6 @@
     const jatuhTempoBulanIni = new Date(today.getFullYear(), today.getMonth(), validTglTerbit + HARI_TEMPO);
     
     if (crm.nunggak > 0) {
-       // Cek apakah dia baru masuk bulan ke-1 tagihan (belum telat H+6)
        if(crm.nunggak === 1 && today <= jatuhTempoBulanIni && today >= terbitBulanIni) {
            return { phase: "aktif", label: `JT ${Math.ceil((jatuhTempoBulanIni - today) / 86400000)} hari lagi`, color: "#D97706", bg: "#FFFBEB", urgent: false };
        }
@@ -110,11 +108,8 @@
     const multiplier = crm.nunggak > 0 ? crm.nunggak : 1;
     const nominal = p.tagihan * multiplier;
     
-    // Perbaikan kalimat WA agar tidak aneh saat nunggak 0 atau 1
     let statusText = "Bulan Ini";
-    if (crm.nunggak > 1) {
-        statusText = `${crm.nunggak} Bulan`;
-    }
+    if (crm.nunggak > 1) { statusText = `${crm.nunggak} Bulan`; }
     
     const msgText = `Halo *Kak ${p.nama}* 👋\n\nMengingatkan tagihan WiFi MyRepublic ID *${p.customerId}* Anda.\n\nTotal Tagihan : *${formatRupiah(nominal)}* (${statusText})\n\nMohon segera melakukan pembayaran agar layanan tetap aktif ya Kak 😊\nTerima kasih! 🙏`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(msgText)}`;
@@ -182,7 +177,6 @@
       
       const tglPsg = new Date(form.joinDate);
       const terbit = tglPsg.getDate();
-      
       onSave({...form, nama: toTitleCase(form.nama.trim()), tanggalTerbit: terbit});
     }
 
@@ -284,7 +278,11 @@
 
     const handleSave = (data) => {
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
-      const dataToSave = { ...data, statusKlien: data.statusKlien || "Aktif", paidCycle: data.paidCycle || 0 };
+      
+      let finalJoinDate = data.startCycle || "";
+      if (finalJoinDate && finalJoinDate.length === 7) { finalJoinDate += "-01"; }
+      
+      const dataToSave = { ...data, joinDate: finalJoinDate, statusKlien: data.statusKlien || "Aktif", paidCycle: data.paidCycle || 0 };
       const isEdit = !!data.id;
       const updated = isEdit ? pelanggan.map(p => p.id === dataToSave.id ? dataToSave : p) : [...pelanggan, { ...dataToSave, id: String(Date.now()) }];
       
@@ -495,12 +493,42 @@
                   {!isPutus && crm.nunggak === 0 && <span style={{ background: status.bg, color: status.color, padding: "4px 10px", borderRadius: 12, fontSize: 10, fontWeight: 800 }}>{status.label}</span>}
                 </div>
                 
-                {/* Perbaikan Mikro: Instruksi Jatuh Tempo */}
-                {!isPutus && crm.nunggak > 0 && (
-                  <div style={{ fontSize: 10, color: "#DC2626", fontWeight: 700, marginTop: 6, textAlign: "right" }}>
-                    * Maksimal Bayar 6 Hari Setelah Terbit
-                  </div>
-                )}
+                {/* Perbaikan Mikro: Instruksi Jatuh Tempo Dinamis */}
+                {(() => {
+                  if (isPutus || crm.nunggak === 0) return null;
+                  
+                  const today = getNow();
+                  today.setHours(0, 0, 0, 0);
+                  const jtDate = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit + HARI_TEMPO);
+                  const tglTerbitDate = new Date(today.getFullYear(), today.getMonth(), crm.tglTerbit);
+                  
+                  let noteText = "";
+                  let noteColor = "";
+                  
+                  if (crm.nunggak === 1) {
+                      if (today >= tglTerbitDate && today <= jtDate) {
+                          const sisaHari = Math.ceil((jtDate - today) / 86400000);
+                          if (sisaHari === 0) {
+                              noteText = "⚠️ Hari ini batas terakhir bayar!";
+                          } else {
+                              noteText = `⏳ Sisa waktu bayar: ${sisaHari} Hari`;
+                          }
+                          noteColor = "#D97706"; // Amber
+                      } else {
+                          noteText = "⚠️ Peringatan: Telat Bayar!";
+                          noteColor = "#DC2626"; // Merah
+                      }
+                  } else {
+                      noteText = `⚠️ Peringatan: Telat Bayar ${crm.nunggak} Bulan!`;
+                      noteColor = "#DC2626"; // Merah
+                  }
+
+                  return (
+                    <div style={{ fontSize: 11, color: noteColor, fontWeight: 800, marginTop: 8, textAlign: "right", letterSpacing: "0.2px" }}>
+                      {noteText}
+                    </div>
+                  );
+                })()}
 
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                   {!isPutus && (
