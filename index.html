@@ -37,7 +37,7 @@
   const { useState, useEffect, useMemo } = React;
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFbmU1b1aInelEnaWwO8PjaLnUEiy-CAvoN1WoN9GkEFTiYEJ_kam8NVLtD4FKQESwBA/exec";
-  const STORAGE_KEY = "morabilling-pro-v19"; 
+  const STORAGE_KEY = "morabilling-pro-v20";
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
 
@@ -46,6 +46,14 @@
   const formatRupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");
   const formatNumberInput = (n) => n ? Number(n.toString().replace(/\D/g, "")).toLocaleString('id-ID') : "";
   const cleanPhone = (wa) => { let num = String(wa || "").replace(/\D/g, ""); if (num.startsWith("0")) return "62" + num.substring(1); if (num.startsWith("8")) return "62" + num; return num; };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const m = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`;
+  };
 
   const getCurrentBillingCycle = (tanggalTerbit) => {
     const today = getNow();
@@ -57,56 +65,33 @@
 
   const isLunas = (p) => p.paidCycle ? String(p.paidCycle).includes(getCurrentBillingCycle(p.tanggalTerbit)) : false;
 
-  // FITUR BARU: AUTO-FREEZE CYCLE PADA PELANGGAN MACET
-  const getCycleData = (p) => {
-    if (!p.joinDate) return { num: null, isStuck: false };
-    const parts = String(p.joinDate).split("-");
-    if (parts.length < 2) return { num: null, isStuck: false };
+  // CRM LOGIC: Mengkalkulasi Usia Pelanggan & Riwayat Pembayaran ke-berapa
+  const getCRMStats = (p) => {
+    if (!p.joinDate) return { usia: 0, bayar: 0 };
+    const joinD = new Date(p.joinDate);
+    if (isNaN(joinD.getTime())) return { usia: 0, bayar: 0 };
     
-    const startYear = parseInt(parts[0], 10);
-    const startMonth = parseInt(parts[1], 10) - 1;
-    let targetYear = getNow().getFullYear();
-    let targetMonth = getNow().getMonth();
-    let isStuck = false;
-
+    const startY = joinD.getFullYear();
+    const startM = joinD.getMonth();
+    const today = getNow();
+    
+    // Usia Pelanggan
+    const usia = (today.getFullYear() - startY) * 12 + (today.getMonth() - startM) + 1;
+    
+    // History Pembayaran
+    let bayar = 0;
     if (p.paidCycle) {
-       const paidParts = String(p.paidCycle).split("-");
-       const paidY = parseInt(paidParts[0], 10);
-       const paidM = parseInt(paidParts[1], 10) - 1;
-       const diffMonths = (targetYear - paidY) * 12 + (targetMonth - paidM);
-
-       // Jika nunggak lebih dari 1 bulan, siklus di-freeze di bulan tagihan tsb.
-       if (diffMonths > 1) { 
-          targetYear = paidY;
-          targetMonth = paidM + 1; 
-          isStuck = true;
-       }
-    } else {
-       const currentDiff = (targetYear - startYear) * 12 + (targetMonth - startMonth);
-       // Jika sudah lewat 1 bulan pasang dan belum ada lunas, stuck di Siklus 1
-       if (currentDiff >= 1) { 
-           targetYear = startYear;
-           targetMonth = startMonth;
-           isStuck = true;
-       }
+      const paidParts = String(p.paidCycle).split("-");
+      if(paidParts.length >= 2) {
+        const paidY = parseInt(paidParts[0], 10);
+        const paidM = parseInt(paidParts[1], 10) - 1;
+        bayar = (paidY - startY) * 12 + (paidM - startM) + 1;
+      }
     }
-
-    const monthsDiff = (targetYear - startYear) * 12 + (targetMonth - startMonth);
-    return { num: Math.max(1, monthsDiff + 1), isStuck };
-  };
-
-  const getCycleBadgeStyle = (cycleData) => {
-    if (!cycleData || cycleData.num === null) return null;
-    const { num, isStuck } = cycleData;
     
-    if (isStuck) return { bg: "#FEF2F2", color: "#DC2626", label: `Macet di Siklus ${num}` }; // Indikator Macet Merah
-
-    if (num >= 1 && num <= 3) return { bg: "#EFF6FF", color: "#1D4ED8", label: `Siklus ${num} (Baru)` };
-    if (num >= 4 && num <= 6) return { bg: "#E6F4EA", color: "#137333", label: `Siklus ${num} (Aman)` };
-    if (num >= 7 && num <= 12) return { bg: "#FEF3C7", color: "#B45309", label: `Siklus ${num} (Setia)` };
-    return { bg: "#F3F4F6", color: "#4B5563", label: `Siklus ${num} (VIP)` };
+    return { usia: Math.max(1, usia), bayar: Math.max(0, bayar) };
   };
-  
+
   const getDaysUntilTerbit = (t) => {
     const today = getNow();
     today.setHours(0, 0, 0, 0);
@@ -115,7 +100,10 @@
     return Math.ceil((target - today) / 86400000);
   };
 
-  const getBillingPhase = (t) => {
+  const getBillingPhase = (p) => {
+    if (p.statusKlien === "Putus") return { phase: "putus", label: "Berhenti Berlangganan", color: "#6B7280", bg: "#E5E7EB", urgent: false };
+
+    const t = p.tanggalTerbit;
     const today = getNow();
     today.setHours(0, 0, 0, 0);
     const tgl = Number(t || 1);
@@ -138,9 +126,11 @@
   };
 
   const exportToCSV = (data) => {
-    // Menghapus "Status Klien" dan "Paket" dari CSV Export
-    const headers = ["ID Pelanggan", "Nama", "No WA", "Tagihan", "Tgl Terbit", "Bulan Join", "Lunas Bulan Ini", "Catatan"];
-    const rows = data.map(p => [p.customerId, p.nama, p.noWa, p.tagihan, p.tanggalTerbit, p.joinDate, isLunas(p) ? "Ya" : "Tidak", `"${(p.catatan || "").replace(/"/g, '""')}"`]);
+    const headers = ["ID Pelanggan", "Nama", "No WA", "Tagihan", "Tgl Terbit", "Tanggal Pasang", "Usia Berlangganan (Bulan)", "Total Bayar (Kali)", "Status Klien", "Lunas Bulan Ini", "Catatan"];
+    const rows = data.map(p => {
+      const stats = getCRMStats(p);
+      return [p.customerId, p.nama, p.noWa, p.tagihan, p.tanggalTerbit, p.joinDate, stats.usia, stats.bayar, p.statusKlien, isLunas(p) ? "Ya" : "Tidak", `"${(p.catatan || "").replace(/"/g, '""')}"`];
+    });
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = `Data_MoraBilling_${getNow().getTime()}.csv`;
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
@@ -181,7 +171,8 @@
   };
 
   const AddForm = ({ initialData, onSave, onDelete, onClose }) => {
-    const [form, setForm] = useState(initialData || { customerId: "", nama: "", noWa: "", tagihan: "", tanggalTerbit: "", startCycle: "", catatan: "" });
+    // Default Status Klien adalah Aktif
+    const [form, setForm] = useState(initialData || { customerId: "", nama: "", noWa: "", tagihan: "", tanggalTerbit: "", joinDate: "", statusKlien: "Aktif", catatan: "" });
     const [tagihanUI, setTagihanUI] = useState(initialData ? formatNumberInput(initialData.tagihan) : "");
     const [errorMsg, setErrorMsg] = useState("");
     const [errorFields, setErrorFields] = useState([]);
@@ -197,7 +188,7 @@
       if (!form.noWa.trim()) errs.push("noWa");
       if (!form.tagihan) errs.push("tagihan");
       if (!form.tanggalTerbit) errs.push("tanggalTerbit");
-      if (!form.startCycle) errs.push("startCycle");
+      if (!form.joinDate) errs.push("joinDate");
 
       if (errs.length > 0) {
         setErrorFields(errs);
@@ -224,17 +215,24 @@
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div style={{ gridColumn: "1 / -1" }}>
+          <div>
             <label style={labelStyle}>Nominal Tagihan (Rp) *</label>
             <input style={{...getInputStyle("tagihan"), fontWeight:700}} type="tel" placeholder="277.500" value={tagihanUI} onChange={e => {
               const val = e.target.value; setTagihanUI(formatNumberInput(val)); setForm({...form, tagihan: val.replace(/\D/g, "")});
             }} />
           </div>
+          <div>
+            <label style={labelStyle}>Status Berlangganan</label>
+            <select style={{...getInputStyle("statusKlien"), color: form.statusKlien === "Putus" ? "#DC2626" : "#111827", fontWeight: 700}} value={form.statusKlien} onChange={e => setForm({...form, statusKlien: e.target.value})}>
+              <option value="Aktif">Aktif</option>
+              <option value="Putus">Putus (Churn)</option>
+            </select>
+          </div>
         </div>
         
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div><label style={labelStyle}>Tgl Terbit *</label><select style={getInputStyle("tanggalTerbit")} value={form.tanggalTerbit} onChange={e => setForm({...form, tanggalTerbit: e.target.value})}><option value="">Pilih...</option>{Array.from({length: 31}, (_, i) => <option key={i+1} value={i+1}>Tgl {i+1}</option>)}</select></div>
-          <div><label style={labelStyle}>Bulan Pasang *</label><input style={getInputStyle("startCycle")} type="month" value={form.startCycle} onChange={e => setForm({...form, startCycle: e.target.value})} /></div>
+          <div><label style={labelStyle}>Tanggal Pasang *</label><input style={getInputStyle("joinDate")} type="date" value={form.joinDate} onChange={e => setForm({...form, joinDate: e.target.value})} /></div>
         </div>
 
         <label style={labelStyle}>Catatan / Keterangan</label>
@@ -299,11 +297,7 @@
     const handleSave = (data) => {
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
       
-      let finalJoinDate = data.startCycle || "";
-      if (finalJoinDate && finalJoinDate.length === 7) { finalJoinDate += "-01"; }
-      
-      // Menghapus data paket dan statusKlien karena sudah dihapus dari UI
-      const dataToSave = { ...data, joinDate: finalJoinDate, paket: "Internet", statusKlien: "Aktif" };
+      const dataToSave = { ...data, statusKlien: data.statusKlien || "Aktif" };
       const isEdit = !!data.id;
       const updated = isEdit ? pelanggan.map(p => p.id === dataToSave.id ? dataToSave : p) : [...pelanggan, { ...dataToSave, id: String(Date.now()), paidCycle: null }];
       
@@ -331,10 +325,14 @@
 
     const stats = useMemo(() => {
       let lunasCount = 0, belumCount = 0;
+      let totalAktif = 0;
       pelanggan.forEach(p => { 
-        if (isLunas(p)) lunasCount++; else belumCount++; 
+        if (p.statusKlien !== "Putus") {
+          totalAktif++;
+          if (isLunas(p)) lunasCount++; else belumCount++; 
+        }
       });
-      return { lunas: lunasCount, belum: belumCount, total: pelanggan.length };
+      return { lunas: lunasCount, belum: belumCount, total: totalAktif };
     }, [pelanggan]);
 
     const filtered = useMemo(() => {
@@ -342,19 +340,22 @@
         const m = (p.nama||"").toLowerCase().includes(search.toLowerCase()) || (p.customerId||"").toLowerCase().includes(search.toLowerCase());
         if (!m) return false;
 
+        if (filter === "putus") return p.statusKlien === "Putus";
+        if (p.statusKlien === "Putus") return false; // Sembunyikan pelanggan putus dari filter lain
+
         if (filter === "lunas") return isLunas(p);
         if (filter === "belum") return !isLunas(p);
         
-        const cycle = getCycleData(p).num;
-        if (filter === "c1") return cycle >= 1 && cycle <= 3;
-        if (filter === "c4") return cycle >= 4 && cycle <= 6;
-        if (filter === "c7") return cycle >= 7 && cycle <= 12;
-        if (filter === "c12") return cycle > 12;
+        const crm = getCRMStats(p);
+        if (filter === "c1") return crm.bayar >= 1 && crm.bayar <= 3;
+        if (filter === "c4") return crm.bayar >= 4 && crm.bayar <= 6;
+        if (filter === "c7") return crm.bayar >= 7 && crm.bayar <= 12;
+        if (filter === "c12") return crm.bayar > 12;
         
         return true;
       }).sort((a, b) => {
-        const aU = !isLunas(a) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(a.tanggalTerbit).phase);
-        const bU = !isLunas(b) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(b.tanggalTerbit).phase);
+        const aU = !isLunas(a) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(a).phase);
+        const bU = !isLunas(b) && ["terbit", "aktif", "lewat"].includes(getBillingPhase(b).phase);
         return aU !== bU ? (aU ? -1 : 1) : getDaysUntilTerbit(a.tanggalTerbit) - getDaysUntilTerbit(b.tanggalTerbit);
       });
     }, [pelanggan, filter, search]);
@@ -371,12 +372,12 @@
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               {!isOnline && <div style={{ background: "#DC2626", color: "white", padding: "6px 10px", borderRadius: 10, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center" }}>Offline</div>}
-              <button onClick={() => {vibe(); exportToCSV(filtered);}} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 12, padding: "8px 12px", color: "white", fontSize: 12, fontWeight: 700 }}>Export CSV</button>
+              <button onClick={() => {vibe(); exportToCSV(pelanggan);}} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 12, padding: "8px 12px", color: "white", fontSize: 12, fontWeight: 700 }}>Export CSV</button>
             </div>
           </div>
 
           <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 16, padding: 15 }}>
-            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 15 }}>Ringkasan Klien ({stats.total} ID)</div>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 15 }}>Status Klien Aktif ({stats.total} ID)</div>
             <div style={{ display: "flex", gap: 10 }}>
               <div style={{ flex: 1, background: "rgba(16, 185, 129, 0.2)", borderRadius: 10, padding: 12, textAlign: "center" }}>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#34D399" }}>{stats.lunas}</div>
@@ -398,8 +399,8 @@
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 5, width: "100%" }}>
               {[
-                ['semua', 'Semua'], ['belum', 'Belum Bayar'], ['lunas', 'Lunas'],
-                ['c1', 'Siklus 1-3'], ['c4', 'Siklus 4-6'], ['c7', 'Siklus 7-12'], ['c12', 'Siklus 12+']
+                ['semua', 'Semua Aktif'], ['belum', 'Belum Bayar'], ['lunas', 'Lunas'],
+                ['putus', 'Putus / Churn'], ['c1', 'Siklus 1-3'], ['c4', 'Siklus 4-6'], ['c7', 'Siklus 7-12'], ['c12', 'Siklus 12+']
               ].map(([v, l]) => (
                 <button key={v} onClick={() => {vibe(); setFilter(v);}} style={{ padding: "6px 14px", borderRadius: 20, border: "1px solid #E5E7EB", fontSize: 12, fontWeight: 700, background: filter === v ? "#111827" : "white", color: filter === v ? "white" : "#6B7280", whiteSpace: "nowrap", transition: "0.2s" }}>{l}</button>
               ))}
@@ -413,37 +414,44 @@
           ) : 
            filtered.length === 0 ? (
             <div style={{ background: "white", borderRadius: 16, padding: "40px 20px", textAlign: "center", border: "1px dashed #D1D5DB" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>{filter === "belum" && pelanggan.filter(p => !isLunas(p)).length === 0 ? "🎉" : "🔍"}</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{filter === "belum" && pelanggan.filter(p => !isLunas(p)).length === 0 ? "Semua Tagihan Lunas!" : "Data tidak ditemukan"}</div>
-              <div style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>{filter === "belum" && pelanggan.filter(p => !isLunas(p)).length === 0 ? "Kerja bagus! Tidak ada klien yang menunggak." : "Coba filter atau kata kunci lain."}</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>{filter === "belum" && pelanggan.filter(p => p.statusKlien !== "Putus" && !isLunas(p)).length === 0 ? "🎉" : "🔍"}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", marginBottom: 6 }}>{filter === "belum" && pelanggan.filter(p => p.statusKlien !== "Putus" && !isLunas(p)).length === 0 ? "Semua Tagihan Lunas!" : "Data tidak ditemukan"}</div>
+              <div style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>{filter === "belum" && pelanggan.filter(p => p.statusKlien !== "Putus" && !isLunas(p)).length === 0 ? "Kerja bagus! Tidak ada klien aktif yang menunggak." : "Coba filter atau kata kunci lain."}</div>
             </div>
            ) :
            filtered.map(p => {
+            const isPutus = p.statusKlien === "Putus";
             const lunasStatus = isLunas(p);
-            const status = getBillingPhase(p.tanggalTerbit);
-            const cycleData = getCycleData(p);
-            const cycleBadge = getCycleBadgeStyle(cycleData);
+            const status = getBillingPhase(p);
+            const crm = getCRMStats(p);
 
             return (
-              <div key={p.id} className="card-enter" style={{ background: "white", padding: 16, borderRadius: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", borderLeft: `5px solid ${lunasStatus ? "#10B981" : status.color}`, opacity: lunasStatus ? 0.75 : 1 }}>
+              <div key={p.id} className="card-enter" style={{ background: "white", padding: 16, borderRadius: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", borderLeft: `5px solid ${isPutus ? "#9CA3AF" : (lunasStatus ? "#10B981" : status.color)}`, opacity: isPutus ? 0.6 : (lunasStatus ? 0.8 : 1), transition: "all 0.2s ease", filter: isPutus ? "grayscale(100%)" : "none" }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <div>
                     <div style={{ display:"flex", gap:6, flexWrap: "wrap", alignItems:"center", marginBottom:6 }}>
                       <span style={{ fontSize: 11, fontWeight: 800, color: "#6D28D9", background: "#EDE9FE", padding: "2px 8px", borderRadius: 6 }}>{p.customerId}</span>
-                      {cycleBadge && (
-                        <span style={{ fontSize: 10, fontWeight: 800, background: cycleBadge.bg, color: cycleBadge.color, padding: "2px 8px", borderRadius: 6, letterSpacing: "0.2px" }}>
-                          {cycleBadge.label}
-                        </span>
-                      )}
+                      <span style={{ fontSize: 10, fontWeight: 700, background: "#F3F4F6", color: "#4B5563", padding: "2px 6px", borderRadius: 4 }}>
+                        Tgl Pasang: {formatDate(p.joinDate)}
+                      </span>
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>{p.nama}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#111827", textDecoration: isPutus ? "line-through" : "none" }}>{p.nama}</div>
                     <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2, fontWeight: 500 }}>{p.noWa}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 17, fontWeight: 800, color: lunasStatus ? "#10B981" : "#111827" }}>{formatRupiah(p.tagihan)}</div>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: isPutus ? "#6B7280" : (lunasStatus ? "#10B981" : "#111827"), textDecoration: isPutus ? "line-through" : "none" }}>{formatRupiah(p.tagihan)}</div>
                   </div>
                 </div>
                 
+                {/* Indikator Pembayaran CRM */}
+                <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                   <span style={{ background: "#F3F4F6", color: "#374151", padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700 }}>Usia: {crm.usia} Bln</span>
+                   <span style={{ background: crm.bayar === 0 ? "#FEF2F2" : "#ECFDF5", color: crm.bayar === 0 ? "#DC2626" : "#059669", padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700 }}>Bayar ke-{crm.bayar}</span>
+                   {crm.usia > crm.bayar && !isPutus && (
+                     <span style={{ background: "#FEF2F2", color: "#DC2626", padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800 }}>Nunggak {crm.usia - crm.bayar} Bln</span>
+                   )}
+                </div>
+
                 {p.catatan && <div style={{ fontSize: 11, color: "#4B5563", marginTop: 10, padding: "8px 12px", background: "#FFFBEB", borderLeft: "2px solid #D97706", borderRadius: 4, fontWeight: 500 }}>Catatan: {p.catatan}</div>}
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px dashed #E5E7EB" }}>
@@ -452,17 +460,13 @@
                 </div>
 
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                  <a onClick={()=>vibe()} href={buildWALink(p.noWa, p.nama, p.tanggalTerbit, p.tagihan, p.customerId)} target="_blank" style={{ flex: 1, background: status.urgent && !lunasStatus ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>WA Reminder</a>
-                  <button onClick={() => toggleLunas(p)} style={{ flex: 1, background: lunasStatus ? "#FEF2F2" : "#ECFDF5", color: lunasStatus ? "#DC2626" : "#059669", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>{lunasStatus ? "Batal Lunas" : "✔ Lunas"}</button>
-                  <button onClick={() => { 
-                    vibe(); 
-                    let safeCycle = "";
-                    if (p.joinDate && typeof p.joinDate === 'string' && p.joinDate.length >= 7) {
-                      safeCycle = p.joinDate.substring(0, 7);
-                    }
-                    setEditItem({...p, startCycle: safeCycle}); 
-                    setShowForm(true); 
-                  }} style={{ padding: "0 16px", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, color: "#374151", fontWeight: 700 }}>Edit</button>
+                  {!isPutus && (
+                    <React.Fragment>
+                      <a onClick={()=>vibe()} href={buildWALink(p.noWa, p.nama, p.tanggalTerbit, p.tagihan, p.customerId)} target="_blank" style={{ flex: 1, background: status.urgent && !lunasStatus ? "#DC2626" : "#10B981", color: "white", textAlign: "center", padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>WA Reminder</a>
+                      <button onClick={() => toggleLunas(p)} style={{ flex: 1, background: lunasStatus ? "#FEF2F2" : "#ECFDF5", color: lunasStatus ? "#DC2626" : "#059669", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700 }}>{lunasStatus ? "Batal Lunas" : "✔ Lunas"}</button>
+                    </React.Fragment>
+                  )}
+                  <button onClick={() => { vibe(); setEditItem({...p}); setShowForm(true); }} style={{ flex: isPutus ? 1 : "unset", padding: "10px 16px", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, color: "#374151", fontWeight: 700 }}>Edit {isPutus ? "Data" : ""}</button>
                 </div>
               </div>
             );
