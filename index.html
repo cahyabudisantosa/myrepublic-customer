@@ -68,8 +68,9 @@
 <script type="text/babel">
   const { useState, useEffect, useMemo } = React;
 
+  // LINK BARU SESUAI REQUEST ANDA
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxPWt-AC9GPhyv74yH7UBzOLiQh00vatLq86BnhPle663p17pz23UXgLjymNCRBSWZvbg/exec";
-  const STORAGE_KEY = "morabilling-pro-v36"; 
+  const STORAGE_KEY = "morabilling-pro-v37"; 
   const PIN_RAHASIA = "1234";
   const HARI_TEMPO = 6;
   const ITEM_PER_PAGE = 20;
@@ -135,7 +136,7 @@
     return { phase: "normal", label: `Aman. Rilis ${daysToNext} hari lagi`, color: "#059669", bg: "#ECFDF5", urgent: false };
   };
 
-  // FORMAT WA 100% FIX SESUAI GAMBAR
+  // FORMAT WA 100% FIX
   const buildWALink = (p, crm) => {
     const phone = cleanPhone(p.noWa);
     const multiplier = crm.nunggak > 0 ? crm.nunggak : 1;
@@ -289,7 +290,6 @@
     const [pelanggan, setPelanggan] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // Fitur: Debounce & Pagination state
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [filter, setFilter] = useState("semua");
@@ -314,7 +314,6 @@
       fetchData();
     }, [isLoggedIn]);
 
-    // Timer Debounce 300ms
     useEffect(() => {
       const handler = setTimeout(() => { setDebouncedSearch(search); setVisibleCount(ITEM_PER_PAGE); }, 300);
       return () => { clearTimeout(handler); };
@@ -369,6 +368,7 @@
     };
 
     const catatBayar = (p) => {
+      if (typeof vibe !== "undefined") vibe();
       const crm = getCRMStats(p);
       if (crm.nunggak === 0) return; 
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
@@ -379,6 +379,7 @@
     };
 
     const batalBayar = (p) => {
+      if (typeof vibe !== "undefined") vibe();
       if (!navigator.onLine) { showMsg("Gagal. Koneksi Offline!", "error"); return; }
       const currentBayar = parseInt(p.paidCycle, 10) || 0;
       if (currentBayar <= 0) return;
@@ -619,12 +620,13 @@
         </div>
 
         {hasMore && !loading && (
-          <button className="load-more-btn" onClick={() => { vibe(); setVisibleCount(v => v + ITEM_PER_PAGE); }}>
+          <button className="load-more-btn" onClick={() => { if (typeof vibe !== "undefined") vibe(); setVisibleCount(v => v + ITEM_PER_PAGE); }}>
             Tampilkan Lebih Banyak &darr;
           </button>
         )}
 
-        <button onClick={() => setEditItem(null)} style={{ position: "fixed", bottom: 24, right: 20, width: 60, height: 60, borderRadius: 30, background: "linear-gradient(135deg, #7C3AED, #4C1D95)", color: "white", border: "none", fontSize: 32, fontWeight: 300, boxShadow: "0 4px 15px rgba(76,29,149,0.4)", zIndex: 50, cursor: "pointer" }}>+</button>
+        {/* BUG FIXED: Tombol Plus kini memiliki setShowForm(true) */}
+        <button onClick={() => { if (typeof vibe !== "undefined") vibe(); setEditItem(null); setShowForm(true); }} style={{ position: "fixed", bottom: 24, right: 20, width: 60, height: 60, borderRadius: 30, background: "linear-gradient(135deg, #7C3AED, #4C1D95)", color: "white", border: "none", fontSize: 32, fontWeight: 300, boxShadow: "0 4px 15px rgba(76,29,149,0.4)", zIndex: 50, cursor: "pointer" }}>+</button>
 
         {showForm && (
           <AddForm initialData={editItem} onSave={handleSave} onDelete={handleDelete} onClose={() => {setEditItem(null); setShowForm(false);}} />
